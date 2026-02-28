@@ -1,5 +1,6 @@
 "use client";
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
+import { createClient } from "./lib/supabase";
 
 const TIPOS_COMIDA = ["Desayuno", "Almuerzo", "Merienda", "Cena", "Colación", "Postre", "Smoothie"];
 const PERSONAS_OPT = ["1 persona", "2 personas", "3-4 personas", "5+ personas"];
@@ -217,6 +218,74 @@ const css = `
   }
   .btn-reset:hover { border-color: var(--accent); color: var(--accent); }
 
+  /* AUTH STYLES */
+  .auth-wrap {
+    min-height: 100vh; display: flex; align-items: center; justify-content: center;
+    padding: 24px;
+  }
+  .auth-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 24px; padding: 40px; width: 100%; max-width: 420px;
+    box-shadow: var(--shadow-lg);
+  }
+  .auth-logo {
+    font-family: 'Lora', serif; font-size: 28px; font-weight: 600;
+    color: var(--text); margin-bottom: 8px; text-align: center;
+  }
+  .auth-logo em { font-style: italic; color: var(--accent); }
+  .auth-sub { font-size: 14px; color: var(--muted); text-align: center; margin-bottom: 32px; }
+  .auth-tabs {
+    display: flex; gap: 0; margin-bottom: 28px;
+    border: 1.5px solid var(--border); border-radius: 12px; overflow: hidden;
+  }
+  .auth-tab {
+    flex: 1; padding: 10px; font-family: 'Outfit', sans-serif;
+    font-size: 14px; font-weight: 500; cursor: pointer;
+    background: none; border: none; color: var(--muted); transition: all 0.2s;
+  }
+  .auth-tab.active { background: var(--accent); color: white; }
+  .auth-field { margin-bottom: 16px; }
+  .auth-field label { display: block; font-size: 13px; font-weight: 500; color: var(--muted); margin-bottom: 6px; }
+  .auth-field input {
+    width: 100%; padding: 11px 14px; border: 1.5px solid var(--border);
+    border-radius: 10px; background: var(--bg);
+    font-family: 'Outfit', sans-serif; font-size: 14px; color: var(--text);
+    box-sizing: border-box; transition: border-color 0.2s;
+  }
+  .auth-field input:focus { outline: none; border-color: var(--accent); }
+  .btn-auth {
+    width: 100%; padding: 14px; background: linear-gradient(135deg, var(--accent), var(--accent2));
+    color: white; border: none; border-radius: 12px;
+    font-family: 'Outfit', sans-serif; font-size: 15px; font-weight: 600;
+    cursor: pointer; transition: all 0.3s; margin-top: 8px;
+    box-shadow: 0 4px 16px rgba(184,92,42,0.3);
+  }
+  .btn-auth:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(184,92,42,0.4); }
+  .btn-auth:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+  .auth-msg {
+    margin-top: 16px; padding: 12px 16px; border-radius: 10px;
+    font-size: 13px; text-align: center;
+  }
+  .auth-msg.success { background: var(--green-bg); border: 1px solid var(--green-bd); color: var(--green); }
+  .auth-msg.error { background: #FEF2F2; border: 1px solid #FECACA; color: #DC2626; }
+
+  /* TOP BAR */
+  .topbar {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 32px; padding: 12px 16px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 14px; box-shadow: var(--shadow);
+  }
+  .topbar-user { font-size: 13px; color: var(--muted); }
+  .topbar-user span { font-weight: 600; color: var(--text); }
+  .btn-logout {
+    font-size: 12px; font-weight: 600; color: var(--muted);
+    background: none; border: 1px solid var(--border);
+    padding: 6px 14px; border-radius: 8px; cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-logout:hover { border-color: var(--accent); color: var(--accent); }
+
   @media (max-width: 600px) {
     .prefs-grid { grid-template-columns: 1fr; }
     .pref-group.full { grid-column: 1; }
@@ -224,7 +293,63 @@ const css = `
   }
 `;
 
+// ── Auth Component ──────────────────────────────────────────────
+function AuthScreen({ onLogin }) {
+  const [tab, setTab] = useState("login");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [msg, setMsg] = useState(null);
+  const supabase = createClient();
+
+  const handle = async () => {
+    setLoading(true); setMsg(null);
+    try {
+      if (tab === "login") {
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) throw error;
+        onLogin();
+      } else {
+        const { error } = await supabase.auth.signUp({ email, password });
+        if (error) throw error;
+        setMsg({ type: "success", text: "¡Cuenta creada! Revisá tu email para confirmar." });
+      }
+    } catch (err) {
+      setMsg({ type: "error", text: err.message });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="auth-wrap">
+      <div className="auth-card">
+        <div className="auth-logo">Qué cocino <em>hoy</em> 🍳</div>
+        <div className="auth-sub">Ingresá para ver tus recetas personalizadas</div>
+        <div className="auth-tabs">
+          <button className={`auth-tab ${tab === "login" ? "active" : ""}`} onClick={() => setTab("login")}>Ingresar</button>
+          <button className={`auth-tab ${tab === "signup" ? "active" : ""}`} onClick={() => setTab("signup")}>Registrarse</button>
+        </div>
+        <div className="auth-field">
+          <label>Email</label>
+          <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="tu@email.com" />
+        </div>
+        <div className="auth-field">
+          <label>Contraseña</label>
+          <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" onKeyDown={e => e.key === "Enter" && handle()} />
+        </div>
+        <button className="btn-auth" onClick={handle} disabled={loading}>
+          {loading ? "Cargando..." : tab === "login" ? "Ingresar" : "Crear cuenta"}
+        </button>
+        {msg && <div className={`auth-msg ${msg.type}`}>{msg.text}</div>}
+      </div>
+    </div>
+  );
+}
+
+// ── Main App ────────────────────────────────────────────────────
 export default function HeladeraApp() {
+  const [user, setUser] = useState(undefined); // undefined = loading
   const [image, setImage]           = useState(null);
   const [imageFile, setImageFile]   = useState(null);
   const [dragOver, setDragOver]     = useState(false);
@@ -237,6 +362,21 @@ export default function HeladeraApp() {
   const [dieta, setDieta]           = useState([]);
   const fileRef                     = useRef();
   const [inputKey, setInputKey]     = useState(0);
+  const supabase = createClient();
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      setUser(data.session?.user ?? null);
+    });
+    const { data: listener } = supabase.auth.onAuthStateChange((_e, session) => {
+      setUser(session?.user ?? null);
+    });
+    return () => listener.subscription.unsubscribe();
+  }, []);
+
+  const logout = async () => {
+    await supabase.auth.signOut();
+  };
 
   const handleFile = useCallback((file) => {
     if (!file) return;
@@ -264,11 +404,7 @@ export default function HeladeraApp() {
       const resp = await fetch("/api/recetas", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          imageBase64: base64,
-          mediaType: imageFile.type,
-          tipoComida, personas, dieta, tiempo,
-        }),
+        body: JSON.stringify({ imageBase64: base64, mediaType: imageFile.type, tipoComida, personas, dieta, tiempo }),
       });
       const data = await resp.json();
       if (!resp.ok) throw new Error(data.error || "Error del servidor");
@@ -282,10 +418,27 @@ export default function HeladeraApp() {
 
   const reset = () => { setImage(null); setImageFile(null); setResult(null); setError(null); setInputKey(k => k + 1); };
 
+  // Loading inicial
+  if (user === undefined) return <div style={{display:'flex',alignItems:'center',justifyContent:'center',minHeight:'100vh'}}><div style={{width:40,height:40,border:'3px solid #E2D9C8',borderTopColor:'#B85C2A',borderRadius:'50%',animation:'spin 0.8s linear infinite'}} /></div>;
+
+  // No logueado
+  if (!user) return (
+    <>
+      <style>{css}</style>
+      <AuthScreen onLogin={() => {}} />
+    </>
+  );
+
+  // App principal
   return (
     <>
       <style>{css}</style>
       <div className="page">
+        <div className="topbar">
+          <div className="topbar-user">Hola, <span>{user.email}</span> 👋</div>
+          <button className="btn-logout" onClick={logout}>Salir</button>
+        </div>
+
         <div className="header">
           <div className="header-tag">✦ Cocina simple, fácil, rápido y delicioso</div>
           <h1>Mostrame lo que tenés y te digo qué cocinar <em>AHORA</em></h1>
@@ -304,15 +457,9 @@ export default function HeladeraApp() {
                   onDrop={(e) => { e.preventDefault(); setDragOver(false); handleFile(e.dataTransfer.files[0]); }}
                   onClick={() => fileRef.current?.click()}
                 >
-                  <input
-                    key={inputKey}
-                    ref={fileRef}
-                    type="file"
-                    accept="image/*"
-                    capture="environment"
+                  <input key={inputKey} ref={fileRef} type="file" accept="image/*" capture="environment"
                     onChange={(e) => { if (e.target.files?.[0]) handleFile(e.target.files[0]); }}
-                    style={{ display: 'none' }}
-                  />
+                    style={{ display: 'none' }} />
                   <div className="upload-icon-wrap">📷</div>
                   <div className="upload-title">Fotografiá o subí la foto de tus ingredientes</div>
                   <div className="upload-sub">Desde la heladera, alacena o donde los tengas</div>
@@ -374,11 +521,7 @@ export default function HeladeraApp() {
               </button>
             )}
 
-            {error && (
-              <div className="error-box" style={{ marginTop: 16 }}>
-                ⚠️ {error}
-              </div>
-            )}
+            {error && <div className="error-box" style={{ marginTop: 16 }}>⚠️ {error}</div>}
           </>
         )}
 
@@ -415,7 +558,15 @@ export default function HeladeraApp() {
                   <ul className="ingredientes-list">
                     {r.ingredientes?.map((ing, j) => <li key={j}>{ing}</li>)}
                   </ul>
-                  {r.beneficios?.length > 0 && <><div className="section-label" style={{color:'var(--green)'}}>✨ Beneficios</div><div style={{display:'flex',flexWrap:'wrap',gap:8,marginBottom:24}}>{r.beneficios.map((b,j)=><span key={j} style={{background:'var(--green-bg)',border:'1px solid var(--green-bd)',color:'var(--green)',padding:'4px 12px',borderRadius:20,fontSize:13}}>{b}</span>)}</div></>}<div className="section-label">Preparación</div>
+                  {r.beneficios?.length > 0 && (
+                    <>
+                      <div className="section-label" style={{color:'var(--green)'}}>✨ Beneficios</div>
+                      <div style={{display:'flex',flexWrap:'wrap',gap:8,marginBottom:24}}>
+                        {r.beneficios.map((b,j) => <span key={j} style={{background:'var(--green-bg)',border:'1px solid var(--green-bd)',color:'var(--green)',padding:'4px 12px',borderRadius:20,fontSize:13}}>{b}</span>)}
+                      </div>
+                    </>
+                  )}
+                  <div className="section-label">Preparación</div>
                   <ol className="pasos-list">
                     {r.pasos?.map((paso, j) => (
                       <li key={j} className="paso-item">
