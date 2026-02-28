@@ -220,7 +220,7 @@ const css = `
 
   /* AUTH STYLES */
   .auth-wrap {
-    min-height: 100vh; display: flex; align-items: center; justify-content: center;
+    min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center;
     padding: 24px;
   }
   .auth-card {
@@ -228,12 +228,17 @@ const css = `
     border-radius: 24px; padding: 40px; width: 100%; max-width: 420px;
     box-shadow: var(--shadow-lg);
   }
-  .auth-logo {
-    font-family: 'Lora', serif; font-size: 28px; font-weight: 600;
-    color: var(--text); margin-bottom: 8px; text-align: center;
+  .auth-logo-wrap {
+    text-align: center; margin-bottom: 28px;
   }
-  .auth-logo em { font-style: italic; color: var(--accent); }
-  .auth-sub { font-size: 14px; color: var(--muted); text-align: center; margin-bottom: 32px; }
+  .auth-logo-wrap img {
+    width: 220px; max-width: 80%;
+  }
+  .auth-title {
+    font-family: 'Lora', serif; font-size: 20px; font-weight: 600;
+    color: var(--text); margin-bottom: 6px; text-align: center;
+  }
+  .auth-sub { font-size: 14px; color: var(--muted); text-align: center; margin-bottom: 28px; }
   .auth-tabs {
     display: flex; gap: 0; margin-bottom: 28px;
     border: 1.5px solid var(--border); border-radius: 12px; overflow: hidden;
@@ -323,8 +328,11 @@ function AuthScreen({ onLogin }) {
 
   return (
     <div className="auth-wrap">
+      <div className="auth-logo-wrap">
+        <img src="/logo.png" alt="Que Cocino Today" />
+      </div>
       <div className="auth-card">
-        <div className="auth-logo">Qué cocino <em>hoy</em> 🍳</div>
+        <div className="auth-title">Que Cocino Today</div>
         <div className="auth-sub">Ingresá para ver tus recetas personalizadas</div>
         <div className="auth-tabs">
           <button className={`auth-tab ${tab === "login" ? "active" : ""}`} onClick={() => setTab("login")}>Ingresar</button>
@@ -440,7 +448,9 @@ export default function HeladeraApp() {
         </div>
 
         <div className="header">
-          <div className="header-tag">✦ Cocina simple, fácil, rápido y delicioso</div>
+          <div style={{marginBottom: 20}}>
+            <img src="/logo.png" alt="Que Cocino Today" style={{width: 200, maxWidth: '80%'}} />
+          </div>
           <h1>Mostrame lo que tenés y te digo qué cocinar <em>AHORA</em></h1>
           <p>Sacá una foto a tus ingredientes, elegí tus preferencias y te sugerimos 3 recetas perfectas para tu plato de comida.</p>
         </div>
