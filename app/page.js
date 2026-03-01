@@ -232,10 +232,10 @@ const css = `
     text-align: center; margin-bottom: 28px;
   }
   .auth-logo-wrap img {
-    width: 420px; max-width: 90%;
+    width: 220px; max-width: 80%;
   }
   .auth-title {
-    font-family: 'Lora', serif; font-size: 28px; font-weight: 600;
+    font-family: 'Lora', serif; font-size: 20px; font-weight: 600;
     color: var(--text); margin-bottom: 6px; text-align: center;
   }
   .auth-sub { font-size: 14px; color: var(--muted); text-align: center; margin-bottom: 28px; }
@@ -305,6 +305,7 @@ function AuthScreen({ onLogin }) {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState(null);
+  const [showReset, setShowReset] = useState(false);
   const supabase = createClient();
 
   const handle = async () => {
@@ -326,6 +327,23 @@ function AuthScreen({ onLogin }) {
     }
   };
 
+  const handleReset = async () => {
+    if (!email) { setMsg({ type: "error", text: "Ingresá tu email primero." }); return; }
+    setLoading(true); setMsg(null);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: "https://app.quecocino.today",
+      });
+      if (error) throw error;
+      setMsg({ type: "success", text: "¡Te enviamos un email para restablecer tu contraseña!" });
+      setShowReset(false);
+    } catch (err) {
+      setMsg({ type: "error", text: err.message });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="auth-wrap">
       <div className="auth-logo-wrap">
@@ -335,20 +353,53 @@ function AuthScreen({ onLogin }) {
         <div className="auth-title">Que Cocino Today 🔍</div>
         <div className="auth-sub">Ingresá para ver tus recetas personalizadas</div>
         <div className="auth-tabs">
-          <button className={`auth-tab ${tab === "login" ? "active" : ""}`} onClick={() => setTab("login")}>Ingresar</button>
-          <button className={`auth-tab ${tab === "signup" ? "active" : ""}`} onClick={() => setTab("signup")}>Registrarse</button>
+          <button className={`auth-tab ${tab === "login" ? "active" : ""}`} onClick={() => { setTab("login"); setShowReset(false); setMsg(null); }}>Ingresar</button>
+          <button className={`auth-tab ${tab === "signup" ? "active" : ""}`} onClick={() => { setTab("signup"); setShowReset(false); setMsg(null); }}>Registrarse</button>
         </div>
         <div className="auth-field">
           <label>Email</label>
           <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="tu@email.com" />
         </div>
-        <div className="auth-field">
-          <label>Contraseña</label>
-          <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" onKeyDown={e => e.key === "Enter" && handle()} />
-        </div>
-        <button className="btn-auth" onClick={handle} disabled={loading}>
-          {loading ? "Cargando..." : tab === "login" ? "Ingresar" : "Crear cuenta"}
-        </button>
+        {!showReset && (
+          <div className="auth-field">
+            <label>Contraseña</label>
+            <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" onKeyDown={e => e.key === "Enter" && handle()} />
+          </div>
+        )}
+        {!showReset ? (
+          <>
+            <button className="btn-auth" onClick={handle} disabled={loading}>
+              {loading ? "Cargando..." : tab === "login" ? "Ingresar" : "Crear cuenta"}
+            </button>
+            {tab === "login" && (
+              <div style={{textAlign:'center', marginTop:12, display:'flex', flexDirection:'column', gap:8}}>
+                <button onClick={() => { setShowReset(true); setMsg(null); }}
+                  style={{background:'none', border:'none', color:'var(--accent)', fontSize:13, cursor:'pointer', textDecoration:'underline'}}>
+                  ¿Olvidaste tu contraseña?
+                </button>
+                <p style={{fontSize:13, color:'var(--muted)', margin:0}}>
+                  ¿Primera vez?{' '}
+                  <button onClick={() => { setTab("signup"); setMsg(null); }}
+                    style={{background:'none', border:'none', color:'var(--accent)', fontSize:13, cursor:'pointer', textDecoration:'underline', padding:0}}>
+                    Registrate acá
+                  </button>
+                </p>
+              </div>
+            )}
+          </>
+        ) : (
+          <>
+            <button className="btn-auth" onClick={handleReset} disabled={loading}>
+              {loading ? "Enviando..." : "Enviar email de recuperación"}
+            </button>
+            <div style={{textAlign:'center', marginTop:12}}>
+              <button onClick={() => { setShowReset(false); setMsg(null); }}
+                style={{background:'none', border:'none', color:'var(--muted)', fontSize:13, cursor:'pointer', textDecoration:'underline'}}>
+                Volver al login
+              </button>
+            </div>
+          </>
+        )}
         {msg && <div className={`auth-msg ${msg.type}`}>{msg.text}</div>}
       </div>
     </div>
