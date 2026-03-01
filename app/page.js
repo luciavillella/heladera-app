@@ -519,7 +519,7 @@ export default function HeladeraApp() {
                   onDrop={(e) => { e.preventDefault(); setDragOver(false); handleFile(e.dataTransfer.files[0]); }}
                   onClick={() => fileRef.current?.click()}
                 >
-                  <input key={inputKey} ref={fileRef} type="file" accept="image/*" capture="environment"
+                  <input key={inputKey} ref={fileRef} type="file" accept="image/*" 
                     onChange={(e) => { if (e.target.files?.[0]) handleFile(e.target.files[0]); }}
                     style={{ display: 'none' }} />
                   <div className="upload-icon-wrap">📷</div>
