@@ -504,7 +504,7 @@ export default function HeladeraApp() {
           </div>
           <div className="header-tag">✦ Cocina simple, fácil, rápido y delicioso</div>
           <h1>Mostrame lo que tenés y te digo qué cocinar <em>AHORA</em></h1>
-          <p>Sacá una foto a tus ingredientes, elegí tus preferencias y te sugerimos 3 recetas perfectas para tu plato de comida.</p>
+          <p>Sacá una foto a tus ingredientes, elegí tus preferencias y te sugerimos 3 recetas perfectas según lo que tenés.</p>
         </div>
 
         {!result && !loading && (
