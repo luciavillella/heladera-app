@@ -11,11 +11,13 @@ export default function ResetPassword() {
   const supabase = createClient();
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const code = params.get("code");
+    const hash = window.location.hash;
+    const params = new URLSearchParams(hash.substring(1));
+    const access_token = params.get("access_token");
+    const refresh_token = params.get("refresh_token") || "";
 
-    if (code) {
-      supabase.auth.exchangeCodeForSession(code).then(({ error }) => {
+    if (access_token) {
+      supabase.auth.setSession({ access_token, refresh_token }).then(({ error }) => {
         if (!error) {
           setReady(true);
         } else {
@@ -23,7 +25,7 @@ export default function ResetPassword() {
         }
       });
     } else {
-      setMsg({ type: "error", text: "No se encontró el enlace de recuperación." });
+      setMsg({ type: "error", text: "No se encontró el enlace de recuperación. Pedí uno nuevo." });
     }
   }, []);
 
