@@ -499,9 +499,10 @@ export default function HeladeraApp() {
         </div>
 
         <div className="header">
-          <div style={{marginBottom: 20}}>
+          <div style={{marginBottom: 20, textAlign: 'center'}}>
             <img src="/logo.portal.png" alt="Que Cocino Today" style={{width: 200, maxWidth: '80%'}} />
           </div>
+          <div className="header-tag">✦ Cocina simple, fácil, rápido y delicioso</div>
           <h1>Mostrame lo que tenés y te digo qué cocinar <em>AHORA</em></h1>
           <p>Sacá una foto a tus ingredientes, elegí tus preferencias y te sugerimos 3 recetas perfectas para tu plato de comida.</p>
         </div>
