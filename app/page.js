@@ -545,9 +545,9 @@ export default function HeladeraApp() {
         {/* Indicador de trial */}
         {!isPremium && trialActive && (
           <div style={{background:'var(--gold-bg)',border:'1px solid var(--gold-bd)',borderRadius:12,padding:'10px 16px',marginBottom:16,display:'flex',justifyContent:'space-between',alignItems:'center',flexWrap:'wrap',gap:8}}>
-            <span style={{fontSize:13,color:'var(--gold)',fontWeight:600}}>🔥 Consultas hoy: {consultasHoy}/2</span>
-            <span style={{fontSize:13,color:'var(--gold)'}}>⏳ {diasRestantes} días de prueba restantes</span>
-            <a href="https://recetas.quecocino.today/membresia" style={{fontSize:12,color:'var(--accent)',fontWeight:600,textDecoration:'underline'}}>Suscribirme →</a>
+            <span style={{fontSize:15,color:'#92650a',fontWeight:700}}>🔥 Consultas hoy: {consultasHoy}/2</span>
+            <span style={{fontSize:15,color:'#92650a'}}>⏳ {diasRestantes} días de prueba restantes</span>
+            <a href="https://recetas.quecocino.today/membresia" style={{fontSize:14,color:'var(--accent)',fontWeight:700,textDecoration:'underline'}}>Suscribirme →</a>
           </div>
         )}
 
