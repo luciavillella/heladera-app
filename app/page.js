@@ -539,16 +539,7 @@ export default function HeladeraApp() {
       <div className="page">
         <div className="topbar">
           <div className="topbar-user">Hola, <span>{user.email}</span> 👋</div>
-          <div style={{display:'flex',alignItems:'center',gap:12}}>
-            {isPremium && (
-              <a href="https://billing.stripe.com/p/login/fZubJ17HxbkNcJXbZl5Ne00" 
-                target="_blank"
-                style={{fontSize:11,color:'var(--muted)',textDecoration:'underline',cursor:'pointer'}}>
-                Cancelar suscripción
-              </a>
-            )}
-            <button className="btn-logout" onClick={logout}>Salir</button>
-          </div>
+          <button className="btn-logout" onClick={logout}>Salir</button>
         </div>
 
         {/* Indicador de trial */}
@@ -714,6 +705,16 @@ export default function HeladeraApp() {
               </div>
             ))}
             <button className="btn-reset" onClick={reset}>← Hacer otra consulta</button>
+          </div>
+        )}
+
+        {isPremium && (
+          <div style={{textAlign:'center', marginTop:48, paddingBottom:16}}>
+            <a href="https://billing.stripe.com/p/login/fZubJ17HxbkNcJXbZl5Ne00" 
+              target="_blank"
+              style={{fontSize:12, color:'var(--muted)', textDecoration:'underline'}}>
+              Cancelar suscripción
+            </a>
           </div>
         )}
       </div>
