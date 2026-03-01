@@ -12,16 +12,29 @@ export default function ResetPassword() {
 
   useEffect(() => {
     const hash = window.location.hash;
-    const params = new URLSearchParams(hash.substring(1));
-    const access_token = params.get("access_token");
-    const refresh_token = params.get("refresh_token") || "";
+    const search = window.location.search;
+    
+    // Leer tanto del hash como del search
+    const hashParams = new URLSearchParams(hash.substring(1));
+    const searchParams = new URLSearchParams(search);
+    
+    const token_hash = hashParams.get("token_hash") || searchParams.get("token_hash");
+    const code = searchParams.get("code");
 
-    if (access_token) {
-      supabase.auth.setSession({ access_token, refresh_token }).then(({ error }) => {
+    if (token_hash) {
+      supabase.auth.verifyOtp({ token_hash, type: "recovery" }).then(({ data, error }) => {
         if (!error) {
           setReady(true);
         } else {
-          setMsg({ type: "error", text: "El enlace expiró o no es válido. Pedí uno nuevo." });
+          setMsg({ type: "error", text: "El enlace expiró. Pedí uno nuevo." });
+        }
+      });
+    } else if (code) {
+      supabase.auth.exchangeCodeForSession(code).then(({ error }) => {
+        if (!error) {
+          setReady(true);
+        } else {
+          setMsg({ type: "error", text: "El enlace expiró. Pedí uno nuevo." });
         }
       });
     } else {
