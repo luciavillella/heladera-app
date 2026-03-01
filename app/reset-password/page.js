@@ -11,21 +11,20 @@ export default function ResetPassword() {
   const supabase = createClient();
 
   useEffect(() => {
-    // Primero chequeamos si ya hay sesión activa (token ya procesado)
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        setReady(true);
-      }
-    });
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get("code");
 
-    // También escuchamos el evento por si llega después
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === "PASSWORD_RECOVERY" || (event === "SIGNED_IN" && session)) {
-        setReady(true);
-      }
-    });
-
-    return () => subscription.unsubscribe();
+    if (code) {
+      supabase.auth.exchangeCodeForSession(code).then(({ error }) => {
+        if (!error) {
+          setReady(true);
+        } else {
+          setMsg({ type: "error", text: "El enlace expiró o no es válido. Pedí uno nuevo." });
+        }
+      });
+    } else {
+      setMsg({ type: "error", text: "No se encontró el enlace de recuperación." });
+    }
   }, []);
 
   const handleReset = async () => {
@@ -55,28 +54,33 @@ export default function ResetPassword() {
         <h2 style={{fontFamily:'serif',fontSize:22,marginBottom:8,textAlign:'center'}}>Nueva contraseña</h2>
         <p style={{fontSize:14,color:'#7A7060',textAlign:'center',marginBottom:24}}>Ingresá tu nueva contraseña</p>
 
-        {!ready && (
+        {!ready && !msg && (
           <div style={{textAlign:'center',color:'#7A7060',fontSize:14,marginBottom:16}}>
             Verificando enlace...
           </div>
         )}
 
-        <div style={{marginBottom:16}}>
-          <label style={{fontSize:13,fontWeight:600,display:'block',marginBottom:6}}>Nueva contraseña</label>
-          <input type="password" value={password} onChange={e => setPassword(e.target.value)}
-            placeholder="••••••••" disabled={!ready}
-            style={{width:'100%',padding:'12px 14px',border:'1.5px solid #E2D9C8',borderRadius:10,fontSize:14,boxSizing:'border-box',opacity: ready ? 1 : 0.5}} />
-        </div>
-        <div style={{marginBottom:20}}>
-          <label style={{fontSize:13,fontWeight:600,display:'block',marginBottom:6}}>Confirmar contraseña</label>
-          <input type="password" value={confirm} onChange={e => setConfirm(e.target.value)}
-            placeholder="••••••••" disabled={!ready}
-            style={{width:'100%',padding:'12px 14px',border:'1.5px solid #E2D9C8',borderRadius:10,fontSize:14,boxSizing:'border-box',opacity: ready ? 1 : 0.5}} />
-        </div>
-        <button onClick={handleReset} disabled={loading || !ready}
-          style={{width:'100%',padding:'14px',background:'linear-gradient(135deg,#B85C2A,#D4884E)',color:'white',border:'none',borderRadius:12,fontSize:15,fontWeight:600,cursor: ready ? 'pointer' : 'not-allowed',opacity: ready ? 1 : 0.6}}>
-          {loading ? "Guardando..." : "Guardar nueva contraseña"}
-        </button>
+        {ready && (
+          <>
+            <div style={{marginBottom:16}}>
+              <label style={{fontSize:13,fontWeight:600,display:'block',marginBottom:6}}>Nueva contraseña</label>
+              <input type="password" value={password} onChange={e => setPassword(e.target.value)}
+                placeholder="••••••••"
+                style={{width:'100%',padding:'12px 14px',border:'1.5px solid #E2D9C8',borderRadius:10,fontSize:14,boxSizing:'border-box'}} />
+            </div>
+            <div style={{marginBottom:20}}>
+              <label style={{fontSize:13,fontWeight:600,display:'block',marginBottom:6}}>Confirmar contraseña</label>
+              <input type="password" value={confirm} onChange={e => setConfirm(e.target.value)}
+                placeholder="••••••••"
+                style={{width:'100%',padding:'12px 14px',border:'1.5px solid #E2D9C8',borderRadius:10,fontSize:14,boxSizing:'border-box'}} />
+            </div>
+            <button onClick={handleReset} disabled={loading}
+              style={{width:'100%',padding:'14px',background:'linear-gradient(135deg,#B85C2A,#D4884E)',color:'white',border:'none',borderRadius:12,fontSize:15,fontWeight:600,cursor:'pointer'}}>
+              {loading ? "Guardando..." : "Guardar nueva contraseña"}
+            </button>
+          </>
+        )}
+
         {msg && (
           <div style={{marginTop:16,padding:'12px 16px',borderRadius:10,background: msg.type === 'error' ? '#FEF2F2' : '#EBF3EE',color: msg.type === 'error' ? '#DC2626' : '#4A7C5F',fontSize:13}}>
             {msg.text}
