@@ -232,7 +232,7 @@ const css = `
     text-align: center; margin-bottom: 28px;
   }
   .auth-logo-wrap img {
-    width: 220px; max-width: 80%;
+    width: 320px; max-width: 80%;
   }
   .auth-title {
     font-family: 'Lora', serif; font-size: 20px; font-weight: 600;
