@@ -500,7 +500,7 @@ export default function HeladeraApp() {
 
         <div className="header">
           <div style={{marginBottom: 20, textAlign: 'center'}}>
-            <img src="/logo.portal.png" alt="Que Cocino Today" style={{width: 200, maxWidth: '80%'}} />
+            <img src="/logo.portal.png" alt="Que Cocino Today" style={{width: 300, maxWidth: '90%'}} />
           </div>
           <div className="header-tag">✦ Cocina simple, fácil, rápido y delicioso</div>
           <h1>Mostrame lo que tenés y te digo qué cocinar <em>AHORA</em></h1>
