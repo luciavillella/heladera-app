@@ -539,15 +539,24 @@ export default function HeladeraApp() {
       <div className="page">
         <div className="topbar">
           <div className="topbar-user">Hola, <span>{user.email}</span> 👋</div>
-          <button className="btn-logout" onClick={logout}>Salir</button>
+          <div style={{display:'flex',alignItems:'center',gap:12}}>
+            {isPremium && (
+              <a href="https://billing.stripe.com/p/login/fZubJ17HxbkNcJXbZl5Ne00" 
+                target="_blank"
+                style={{fontSize:11,color:'var(--muted)',textDecoration:'underline',cursor:'pointer'}}>
+                Cancelar suscripción
+              </a>
+            )}
+            <button className="btn-logout" onClick={logout}>Salir</button>
+          </div>
         </div>
 
         {/* Indicador de trial */}
         {!isPremium && trialActive && (
           <div style={{background:'var(--gold-bg)',border:'1px solid var(--gold-bd)',borderRadius:12,padding:'10px 16px',marginBottom:16,display:'flex',justifyContent:'space-between',alignItems:'center',flexWrap:'wrap',gap:8}}>
-            <span style={{fontSize:15,color:'#92650a',fontWeight:700}}>🔥 Consultas hoy: {consultasHoy}/2</span>
-            <span style={{fontSize:15,color:'#92650a'}}>⏳ {diasRestantes} días de prueba restantes</span>
-            <a href="https://recetas.quecocino.today/membresia" style={{fontSize:14,color:'var(--accent)',fontWeight:700,textDecoration:'underline'}}>Suscribirme →</a>
+            <span style={{fontSize:13,color:'var(--gold)',fontWeight:600}}>🔥 Consultas hoy: {consultasHoy}/2</span>
+            <span style={{fontSize:13,color:'var(--gold)'}}>⏳ {diasRestantes} días de prueba restantes</span>
+            <a href="https://recetas.quecocino.today/membresia" style={{fontSize:12,color:'var(--accent)',fontWeight:600,textDecoration:'underline'}}>Suscribirme →</a>
           </div>
         )}
 
