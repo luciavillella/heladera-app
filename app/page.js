@@ -408,7 +408,8 @@ function AuthScreen({ onLogin }) {
 
 // ── Main App ────────────────────────────────────────────────────
 export default function HeladeraApp() {
-  const [user, setUser] = useState(undefined); // undefined = loading
+  const [user, setUser] = useState(undefined);
+  const [profile, setProfile] = useState(null);
   const [image, setImage]           = useState(null);
   const [imageFile, setImageFile]   = useState(null);
   const [dragOver, setDragOver]     = useState(false);
@@ -426,16 +427,29 @@ export default function HeladeraApp() {
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
       setUser(data.session?.user ?? null);
+      if (data.session?.user) loadProfile(data.session.user.id);
     });
     const { data: listener } = supabase.auth.onAuthStateChange((_e, session) => {
       setUser(session?.user ?? null);
+      if (session?.user) loadProfile(session.user.id);
     });
     return () => listener.subscription.unsubscribe();
   }, []);
 
-  const logout = async () => {
-    await supabase.auth.signOut();
+  const loadProfile = async (userId) => {
+    const { data } = await supabase.from('user_profiles').select('*').eq('id', userId).single();
+    setProfile(data);
   };
+
+  const logout = async () => { await supabase.auth.signOut(); };
+
+  // Calcular estado del trial
+  const isPremium = profile?.is_premium;
+  const trialEnd = profile?.trial_ends_at ? new Date(profile.trial_ends_at) : null;
+  const trialActive = trialEnd && trialEnd > new Date();
+  const diasRestantes = trialEnd ? Math.max(0, Math.ceil((trialEnd - new Date()) / (1000 * 60 * 60 * 24))) : 0;
+  const consultasHoy = profile?.consultas_hoy || 0;
+  const puedeConsultar = isPremium || (trialActive && consultasHoy < 2);
 
   const handleFile = useCallback((file) => {
     if (!file) return;
@@ -452,8 +466,19 @@ export default function HeladeraApp() {
 
   const analyze = async () => {
     if (!imageFile) return;
+    if (!puedeConsultar) return;
     setLoading(true); setError(null);
     try {
+      // Actualizar contador si no es premium
+      if (!isPremium) {
+        const today = new Date().toISOString().split('T')[0];
+        const nuevasConsultas = profile?.ultima_consulta === today ? consultasHoy + 1 : 1;
+        await supabase.from('user_profiles').update({
+          consultas_hoy: nuevasConsultas,
+          ultima_consulta: today
+        }).eq('id', user.id);
+        setProfile(p => ({...p, consultas_hoy: nuevasConsultas, ultima_consulta: today}));
+      }
       const base64 = await new Promise((res, rej) => {
         const r = new FileReader();
         r.onload = () => res(r.result.split(",")[1]);
@@ -488,6 +513,25 @@ export default function HeladeraApp() {
     </>
   );
 
+  // Trial vencido
+  if (profile && !isPremium && !trialActive) return (
+    <>
+      <style>{css}</style>
+      <div className="auth-wrap">
+        <div className="auth-logo-wrap"><img src="/logo.portal.png" alt="Que Cocino Today" /></div>
+        <div className="auth-card" style={{textAlign:'center'}}>
+          <div style={{fontSize:48, marginBottom:16}}>⏰</div>
+          <div className="auth-title">Tu período de prueba terminó</div>
+          <div className="auth-sub" style={{marginBottom:24}}>Suscribite por solo $3/mes y seguí cocinando con recetas ilimitadas</div>
+          <a href="https://recetas.quecocino.today/membresia" style={{display:'block',padding:'14px',background:'linear-gradient(135deg,#B85C2A,#D4884E)',color:'white',borderRadius:'12px',textDecoration:'none',fontWeight:600,fontSize:15,marginBottom:12}}>
+            Suscribirme ahora 🚀
+          </a>
+          <button onClick={logout} className="btn-reset" style={{margin:'8px auto 0'}}>Salir</button>
+        </div>
+      </div>
+    </>
+  );
+
   // App principal
   return (
     <>
@@ -497,6 +541,26 @@ export default function HeladeraApp() {
           <div className="topbar-user">Hola, <span>{user.email}</span> 👋</div>
           <button className="btn-logout" onClick={logout}>Salir</button>
         </div>
+
+        {/* Indicador de trial */}
+        {!isPremium && trialActive && (
+          <div style={{background:'var(--gold-bg)',border:'1px solid var(--gold-bd)',borderRadius:12,padding:'10px 16px',marginBottom:16,display:'flex',justifyContent:'space-between',alignItems:'center',flexWrap:'wrap',gap:8}}>
+            <span style={{fontSize:13,color:'var(--gold)',fontWeight:600}}>🔥 Consultas hoy: {consultasHoy}/2</span>
+            <span style={{fontSize:13,color:'var(--gold)'}}>⏳ {diasRestantes} días de prueba restantes</span>
+            <a href="https://recetas.quecocino.today/membresia" style={{fontSize:12,color:'var(--accent)',fontWeight:600,textDecoration:'underline'}}>Suscribirme →</a>
+          </div>
+        )}
+
+        {/* Límite alcanzado */}
+        {!isPremium && trialActive && consultasHoy >= 2 && (
+          <div style={{background:'#FEF2F2',border:'1px solid #FECACA',borderRadius:12,padding:'16px 20px',marginBottom:16,textAlign:'center'}}>
+            <div style={{fontSize:13,color:'#DC2626',fontWeight:600,marginBottom:8}}>Usaste tus 2 consultas de hoy 😅</div>
+            <div style={{fontSize:13,color:'#DC2626',marginBottom:12}}>Volvé mañana o suscribite para consultas ilimitadas</div>
+            <a href="https://recetas.quecocino.today/membresia" style={{display:'inline-block',padding:'10px 20px',background:'linear-gradient(135deg,#B85C2A,#D4884E)',color:'white',borderRadius:'10px',textDecoration:'none',fontWeight:600,fontSize:13}}>
+              Suscribirme por $3/mes 🚀
+            </a>
+          </div>
+        )}
 
         <div className="header">
           <div style={{marginBottom: 20, textAlign: 'center'}}>
@@ -519,7 +583,7 @@ export default function HeladeraApp() {
                   onDrop={(e) => { e.preventDefault(); setDragOver(false); handleFile(e.dataTransfer.files[0]); }}
                   onClick={() => fileRef.current?.click()}
                 >
-                  <input key={inputKey} ref={fileRef} type="file" accept="image/*" 
+                  <input key={inputKey} ref={fileRef} type="file" accept="image/*" capture="environment"
                     onChange={(e) => { if (e.target.files?.[0]) handleFile(e.target.files[0]); }}
                     style={{ display: 'none' }} />
                   <div className="upload-icon-wrap">📷</div>
@@ -578,8 +642,8 @@ export default function HeladeraApp() {
             </div>
 
             {image && (
-              <button className="btn-analyze" onClick={analyze} disabled={loading}>
-                ✨ &nbsp; Generar mis 3 recetas
+              <button className="btn-analyze" onClick={analyze} disabled={loading || !puedeConsultar}>
+                ✨ &nbsp; {!puedeConsultar ? "Límite diario alcanzado" : "Generar mis 3 recetas"}
               </button>
             )}
 
