@@ -332,7 +332,7 @@ function AuthScreen({ onLogin }) {
     setLoading(true); setMsg(null);
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: "https://app.quecocino.today",
+        redirectTo: "https://app.quecocino.today/reset-password",
       });
       if (error) throw error;
       setMsg({ type: "success", text: "¡Te enviamos un email para restablecer tu contraseña!" });
