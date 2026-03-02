@@ -711,10 +711,10 @@ export default function HeladeraApp() {
         {isPremium && (
           <div style={{textAlign:'center', marginTop:48, paddingBottom:16}}>
             <a href="https://wa.link/6qd97a" 
-              target="_blank"
-              style={{fontSize:12, color:'var(--muted)', textDecoration:'underline'}}>
-              Cancelar suscripción
-            </a>
+  target="_blank"
+  style={{fontSize:12, color:'var(--muted)', textDecoration:'underline'}}>
+  Cancelar suscripción
+</a>
           </div>
         )}
       </div>
