@@ -1,3 +1,4 @@
+
 "use client";
 
 export default function Privacy() {
@@ -9,6 +10,7 @@ export default function Privacy() {
           <img src="/logo.portal.png" alt="Que Cocino Today" style={{width:200, maxWidth:"80%", marginBottom:24}} />
           <h1 style={{fontFamily:"'Georgia', serif", fontSize:28, fontWeight:600, color:"#1E1A14", marginBottom:8}}>Política de Privacidad</h1>
           <p style={{fontSize:14, color:"#7A7060"}}>QueCocino.Today — app.quecocino.today</p>
+          <p style={{fontSize:13, color:"#7A7060", marginTop:4}}>Última actualización: marzo 2026</p>
         </div>
 
         <p style={{fontSize:14, color:"#7A7060", marginBottom:32, textAlign:"center"}}>
