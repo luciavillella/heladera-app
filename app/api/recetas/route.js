@@ -1,4 +1,3 @@
-
 import Anthropic from "@anthropic-ai/sdk";
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -7,7 +6,6 @@ export async function POST(request) {
     const body = await request.json();
     const { modo, imageBase64, mediaType, ingredientesEditados, tipoComida, personas, dieta, tiempo } = body;
 
-    // MODO 1: Solo detectar ingredientes (no resta consulta)
     if (modo === "detectar") {
       if (!imageBase64) {
         return Response.json({ error: "No se recibió imagen" }, { status: 400 });
@@ -32,12 +30,10 @@ export async function POST(request) {
       return Response.json({ ingredientesDetectados: ingredientes });
     }
 
-    // MODO 2: Generar recetas con ingredientes (resta consulta)
     if (modo === "recetas") {
       if (!ingredientesEditados) {
         return Response.json({ error: "No se recibieron ingredientes" }, { status: 400 });
       }
-
       const preferencias = [];
       if (tipoComida) preferencias.push(`Tipo de comida: ${tipoComida}`);
       if (personas) preferencias.push(`Cantidad de personas: ${personas}`);
