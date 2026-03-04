@@ -1,7 +1,7 @@
 {
   "name": "Y Ahora Qué Cocino?",
   "short_name": "¿Qué Cocino?",
-  "description": "Sacá una foto a tu heladera y recibí 3 recetas personalizadas con IA",
+  "description": "Sacá una foto a tu heladera y recibí 3 recetas personalizadas",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#F5F0E8",
