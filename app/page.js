@@ -522,9 +522,9 @@ export default function HeladeraApp() {
         <div className="auth-card" style={{textAlign:'center'}}>
           <div style={{fontSize:48, marginBottom:16}}>⏰</div>
           <div className="auth-title">Tu período de prueba terminó</div>
-          <div className="auth-sub" style={{marginBottom:24}}>Suscribite por solo $3/mes y seguí cocinando con recetas ilimitadas</div>
+          <div className="auth-sub" style={{marginBottom:24}}>Activá Versión Premium y seguí cocinando con recetas ilimitadas</div>
           <a href="https://recetas.quecocino.today/membresia" style={{display:'block',padding:'14px',background:'linear-gradient(135deg,#B85C2A,#D4884E)',color:'white',borderRadius:'12px',textDecoration:'none',fontWeight:600,fontSize:15,marginBottom:12}}>
-            Suscribirme ahora 🚀
+            Activar Versión Premium 🚀
           </a>
           <button onClick={logout} className="btn-reset" style={{margin:'8px auto 0'}}>Salir</button>
         </div>
@@ -547,7 +547,7 @@ export default function HeladeraApp() {
           <div style={{background:'var(--gold-bg)',border:'1px solid var(--gold-bd)',borderRadius:12,padding:'10px 16px',marginBottom:16,display:'flex',justifyContent:'space-between',alignItems:'center',flexWrap:'wrap',gap:8}}>
             <span style={{fontSize:13,color:'var(--gold)',fontWeight:600}}>🔥 Consultas hoy: {consultasHoy}/2</span>
             <span style={{fontSize:13,color:'var(--gold)'}}>⏳ {diasRestantes} días de prueba restantes</span>
-            <a href="https://recetas.quecocino.today/membresia" style={{fontSize:12,color:'var(--accent)',fontWeight:600,textDecoration:'underline'}}>Suscribirme →</a>
+            <a href="https://recetas.quecocino.today/membresia" style={{fontSize:12,color:'var(--accent)',fontWeight:600,textDecoration:'underline'}}>Activá Versión Premium →</a>
           </div>
         )}
 
@@ -557,7 +557,7 @@ export default function HeladeraApp() {
             <div style={{fontSize:13,color:'#DC2626',fontWeight:600,marginBottom:8}}>Usaste tus 2 consultas de hoy 😅</div>
             <div style={{fontSize:13,color:'#DC2626',marginBottom:12}}>Volvé mañana o suscribite para consultas ilimitadas</div>
             <a href="https://recetas.quecocino.today/membresia" style={{display:'inline-block',padding:'10px 20px',background:'linear-gradient(135deg,#B85C2A,#D4884E)',color:'white',borderRadius:'10px',textDecoration:'none',fontWeight:600,fontSize:13}}>
-              Suscribirme por $3/mes 🚀
+              Activar Versión Premium 🚀
             </a>
           </div>
         )}
@@ -713,7 +713,7 @@ export default function HeladeraApp() {
             <a href="https://wa.link/6qd97a" 
   target="_blank"
   style={{fontSize:12, color:'var(--muted)', textDecoration:'underline'}}>
-  Cancelar suscripción
+  Cancelar Versión Premium
 </a>
           </div>
         )}
