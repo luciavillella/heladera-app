@@ -357,7 +357,7 @@ function AuthScreen({ onLogin }) {
         <img src="/logo.portal.png" alt="Que Cocino Today" />
       </div>
       <div className="auth-card">
-        <div className="auth-title">Qué cocino <em style={{fontStyle:'italic', color:'var(--accent)'}}>hoy</em> 🍳</div>
+        <div className="auth-title">Qué cocino <em style={{fontStyle:'italic', color:'var(--accent)'}}>Today</em> 🍳</div>
         <div className="auth-sub">Ingresá para ver tus recetas personalizadas</div>
         <div className="auth-tabs">
           <button className={`auth-tab ${tab === "login" ? "active" : ""}`} onClick={() => { setTab("login"); setShowReset(false); setMsg(null); }}>Ingresar</button>
