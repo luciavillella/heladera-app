@@ -1,4 +1,3 @@
-
 "use client";
 import { useState, useCallback, useRef, useEffect } from "react";
 import { createClient } from "./lib/supabase";
@@ -441,8 +440,11 @@ export default function HeladeraApp() {
   const [imageFile, setImageFile]   = useState(null);
   const [dragOver, setDragOver]     = useState(false);
   const [loading, setLoading]       = useState(false);
+  const [loadingMsg, setLoadingMsg] = useState("Analizando tus ingredientes...");
   const [result, setResult]         = useState(null);
   const [error, setError]           = useState(null);
+  const [ingredientesDetectados, setIngredientesDetectados] = useState(null);
+  const [ingredientesEditados, setIngredientesEditados]     = useState("");
   const [tipoComida, setTipoComida] = useState("");
   const [personas, setPersonas]     = useState("");
   const [tiempo, setTiempo]         = useState("");
@@ -490,10 +492,39 @@ export default function HeladeraApp() {
   const toggleDieta = (item) =>
     setDieta((prev) => prev.includes(item) ? prev.filter((d) => d !== item) : [...prev, item]);
 
-  const analyze = async () => {
+  // PASO 1: Detectar ingredientes (no resta consulta)
+  const detectarIngredientes = async () => {
     if (!imageFile) return;
     if (!puedeConsultar) return;
-    setLoading(true); setError(null);
+    setLoading(true); setLoadingMsg("Detectando ingredientes..."); setError(null);
+    try {
+      const base64 = await new Promise((res, rej) => {
+        const r = new FileReader();
+        r.onload = () => res(r.result.split(",")[1]);
+        r.onerror = () => rej(new Error("Error leyendo archivo"));
+        r.readAsDataURL(imageFile);
+      });
+      const resp = await fetch("/api/recetas", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ modo: "detectar", imageBase64: base64, mediaType: imageFile.type }),
+      });
+      const data = await resp.json();
+      if (!resp.ok) throw new Error(data.error || "Error del servidor");
+      setIngredientesDetectados(data.ingredientesDetectados);
+      setIngredientesEditados(data.ingredientesDetectados);
+    } catch (err) {
+      setError("Algo salió mal: " + err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // PASO 2: Generar recetas con ingredientes editados (resta consulta)
+  const generarRecetas = async () => {
+    if (!ingredientesEditados) return;
+    if (!puedeConsultar) return;
+    setLoading(true); setLoadingMsg("Preparando tus recetas..."); setError(null);
     try {
       if (!isPremium) {
         const today = new Date().toISOString().split('T')[0];
@@ -504,16 +535,10 @@ export default function HeladeraApp() {
         }).eq('id', user.id);
         setProfile(p => ({...p, consultas_hoy: nuevasConsultas, ultima_consulta: today}));
       }
-      const base64 = await new Promise((res, rej) => {
-        const r = new FileReader();
-        r.onload = () => res(r.result.split(",")[1]);
-        r.onerror = () => rej(new Error("Error leyendo archivo"));
-        r.readAsDataURL(imageFile);
-      });
       const resp = await fetch("/api/recetas", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ imageBase64: base64, mediaType: imageFile.type, tipoComida, personas, dieta, tiempo }),
+        body: JSON.stringify({ modo: "recetas", ingredientesEditados, tipoComida, personas, dieta, tiempo }),
       });
       const data = await resp.json();
       if (!resp.ok) throw new Error(data.error || "Error del servidor");
@@ -525,7 +550,7 @@ export default function HeladeraApp() {
     }
   };
 
-  const reset = () => { setImage(null); setImageFile(null); setResult(null); setError(null); setInputKey(k => k + 1); };
+  const reset = () => { setImage(null); setImageFile(null); setResult(null); setError(null); setIngredientesDetectados(null); setIngredientesEditados(""); setInputKey(k => k + 1); };
 
   if (user === undefined) return <div style={{display:'flex',alignItems:'center',justifyContent:'center',minHeight:'100vh'}}><div style={{width:40,height:40,border:'3px solid #E2D9C8',borderTopColor:'#B85C2A',borderRadius:'50%',animation:'spin 0.8s linear infinite'}} /></div>;
 
@@ -590,7 +615,7 @@ export default function HeladeraApp() {
           <p>Sacá una foto a tus ingredientes, elegí tus preferencias y te sugerimos 3 recetas perfectas según lo que tenés.</p>
         </div>
 
-        {!result && !loading && (
+        {!result && !loading && !ingredientesDetectados && (
           <>
             <div className="card">
               <div className="card-title">📷 Fotografiá tus ingredientes disponibles</div>
@@ -660,9 +685,9 @@ export default function HeladeraApp() {
               </div>
             </div>
 
-            {image && (
-              <button className="btn-analyze" onClick={analyze} disabled={loading || !puedeConsultar}>
-                ✨ &nbsp; {!puedeConsultar ? "Límite diario alcanzado" : "Mostrar mis 3 recetas"}
+            {image && !ingredientesDetectados && (
+              <button className="btn-analyze" onClick={detectarIngredientes} disabled={loading || !puedeConsultar}>
+                ✨ &nbsp; {!puedeConsultar ? "Límite diario alcanzado" : "Analizar ingredientes"}
               </button>
             )}
 
@@ -673,8 +698,27 @@ export default function HeladeraApp() {
         {loading && (
           <div className="card loading-wrap">
             <div className="loading-spinner" />
-            <div className="loading-title">Analizando tus ingredientes...</div>
-            <div className="loading-sub">Estamos creando tus recetas personalizadas, un momento...</div>
+            <div className="loading-title">{loadingMsg}</div>
+            <div className="loading-sub">Un momento...</div>
+          </div>
+        )}
+
+        {/* PASO DE EDICION DE INGREDIENTES */}
+        {!loading && ingredientesDetectados && !result && (
+          <div className="card">
+            <div className="card-title">🔍 Ingredientes detectados — revisá y corregí si hace falta</div>
+            <textarea
+              value={ingredientesEditados}
+              onChange={e => setIngredientesEditados(e.target.value)}
+              rows={4}
+              style={{width:'100%', padding:'12px 14px', border:'1.5px solid var(--border)', borderRadius:10, fontSize:14, fontFamily:'Outfit, sans-serif', color:'var(--text)', background:'var(--bg)', boxSizing:'border-box', resize:'vertical', lineHeight:1.6}}
+            />
+            <p style={{fontSize:12, color:'var(--muted)', marginTop:8, marginBottom:20}}>
+              ✏️ Podés corregir ingredientes mal detectados o agregar los que falten.
+            </p>
+            <button className="btn-analyze" onClick={generarRecetas} disabled={loading || !puedeConsultar}>
+              ✨ &nbsp; {!puedeConsultar ? "Límite diario alcanzado" : "Mostrar mis 3 recetas"}
+            </button>
           </div>
         )}
 
