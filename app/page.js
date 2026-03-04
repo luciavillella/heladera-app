@@ -231,8 +231,10 @@ const css = `
   .auth-logo-wrap {
     text-align: center; margin-bottom: 28px;
   }
-  .auth-logo-wrap img {
-    width: 220px; max-width: 80%;
+  @media (max-width: 600px) {
+    .auth-logo-wrap img {
+      width: 280px; max-width: 90%;
+    }
   }
   .auth-title {
     font-family: 'Lora', serif; font-size: 20px; font-weight: 600;
