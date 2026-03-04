@@ -1,3 +1,4 @@
+
 "use client";
 import { useState, useCallback, useRef, useEffect } from "react";
 import { createClient } from "./lib/supabase";
@@ -231,6 +232,9 @@ const css = `
   .auth-logo-wrap {
     text-align: center; margin-bottom: 28px;
   }
+  .auth-logo-wrap img {
+    width: 220px; max-width: 80%;
+  }
   @media (max-width: 600px) {
     .auth-logo-wrap img {
       width: 280px; max-width: 90%;
@@ -305,6 +309,7 @@ function AuthScreen({ onLogin }) {
   const [tab, setTab] = useState("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState(null);
   const [showReset, setShowReset] = useState(false);
@@ -363,17 +368,30 @@ function AuthScreen({ onLogin }) {
           <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="tu@email.com" />
         </div>
         {!showReset && (
-          <div className="auth-field">
-            <label>Contraseña</label>
-            id="auth-password" />
-</div>
-<div style={{display:'flex', alignItems:'center', gap:8, marginTop:8}}>
-  <input type="checkbox" id="show-password" onChange={e => {
-    const input = document.getElementById('auth-password');
-    input.type = e.target.checked ? 'text' : 'password';
-  }} style={{width:16, height:16, cursor:'pointer', accentColor:'var(--accent)'}} />
-  <label htmlFor="show-password" style={{fontSize:13, color:'var(--muted)', cursor:'pointer'}}>Mostrar contraseña</label>
-          </div>
+          <>
+            <div className="auth-field">
+              <label>Contraseña</label>
+              <input
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                placeholder="••••••••"
+                onKeyDown={e => e.key === "Enter" && handle()}
+              />
+            </div>
+            <div style={{display:'flex', alignItems:'center', gap:8, marginTop:-8, marginBottom:16}}>
+              <input
+                type="checkbox"
+                id="show-password"
+                checked={showPassword}
+                onChange={e => setShowPassword(e.target.checked)}
+                style={{width:16, height:16, cursor:'pointer', accentColor:'#B85C2A'}}
+              />
+              <label htmlFor="show-password" style={{fontSize:13, color:'#7A7060', cursor:'pointer'}}>
+                Mostrar contraseña
+              </label>
+            </div>
+          </>
         )}
         {!showReset ? (
           <>
@@ -452,7 +470,6 @@ export default function HeladeraApp() {
 
   const logout = async () => { await supabase.auth.signOut(); };
 
-  // Calcular estado del trial
   const isPremium = profile?.is_premium;
   const trialEnd = profile?.trial_ends_at ? new Date(profile.trial_ends_at) : null;
   const trialActive = trialEnd && trialEnd > new Date();
@@ -478,7 +495,6 @@ export default function HeladeraApp() {
     if (!puedeConsultar) return;
     setLoading(true); setError(null);
     try {
-      // Actualizar contador si no es premium
       if (!isPremium) {
         const today = new Date().toISOString().split('T')[0];
         const nuevasConsultas = profile?.ultima_consulta === today ? consultasHoy + 1 : 1;
@@ -511,10 +527,8 @@ export default function HeladeraApp() {
 
   const reset = () => { setImage(null); setImageFile(null); setResult(null); setError(null); setInputKey(k => k + 1); };
 
-  // Loading inicial
   if (user === undefined) return <div style={{display:'flex',alignItems:'center',justifyContent:'center',minHeight:'100vh'}}><div style={{width:40,height:40,border:'3px solid #E2D9C8',borderTopColor:'#B85C2A',borderRadius:'50%',animation:'spin 0.8s linear infinite'}} /></div>;
 
-  // No logueado
   if (!user) return (
     <>
       <style>{css}</style>
@@ -522,7 +536,6 @@ export default function HeladeraApp() {
     </>
   );
 
-  // Trial vencido
   if (profile && !isPremium && !trialActive) return (
     <>
       <style>{css}</style>
@@ -531,7 +544,7 @@ export default function HeladeraApp() {
         <div className="auth-card" style={{textAlign:'center'}}>
           <div style={{fontSize:48, marginBottom:16}}>⏰</div>
           <div className="auth-title">Tu período de prueba terminó</div>
-          <div className="auth-sub" style={{marginBottom:24}}>Activá Versión Premium y seguí cocinando con recetas ilimitadas</div>
+          <div className="auth-sub" style={{marginBottom:24}}>Activá tu Versión Premium y seguí cocinando con recetas ilimitadas</div>
           <a href="https://recetas.quecocino.today/membresia" style={{display:'block',padding:'14px',background:'linear-gradient(135deg,#B85C2A,#D4884E)',color:'white',borderRadius:'12px',textDecoration:'none',fontWeight:600,fontSize:15,marginBottom:12}}>
             Activar Versión Premium 🚀
           </a>
@@ -541,7 +554,6 @@ export default function HeladeraApp() {
     </>
   );
 
-  // App principal
   return (
     <>
       <style>{css}</style>
@@ -551,20 +563,18 @@ export default function HeladeraApp() {
           <button className="btn-logout" onClick={logout}>Salir</button>
         </div>
 
-        {/* Indicador de trial */}
         {!isPremium && trialActive && (
           <div style={{background:'var(--gold-bg)',border:'1px solid var(--gold-bd)',borderRadius:12,padding:'10px 16px',marginBottom:16,display:'flex',justifyContent:'space-between',alignItems:'center',flexWrap:'wrap',gap:8}}>
             <span style={{fontSize:13,color:'var(--gold)',fontWeight:600}}>🔥 Consultas hoy: {consultasHoy}/2</span>
             <span style={{fontSize:13,color:'var(--gold)'}}>⏳ {diasRestantes} días de prueba restantes</span>
-            <a href="https://recetas.quecocino.today/membresia" style={{fontSize:12,color:'var(--accent)',fontWeight:600,textDecoration:'underline'}}>Activá Versión Premium →</a>
+            <a href="https://recetas.quecocino.today/membresia" style={{fontSize:12,color:'var(--accent)',fontWeight:600,textDecoration:'underline'}}>Activar Versión Premium →</a>
           </div>
         )}
 
-        {/* Límite alcanzado */}
         {!isPremium && trialActive && consultasHoy >= 2 && (
           <div style={{background:'#FEF2F2',border:'1px solid #FECACA',borderRadius:12,padding:'16px 20px',marginBottom:16,textAlign:'center'}}>
             <div style={{fontSize:13,color:'#DC2626',fontWeight:600,marginBottom:8}}>Usaste tus 2 consultas de hoy 😅</div>
-            <div style={{fontSize:13,color:'#DC2626',marginBottom:12}}>Volvé mañana o suscribite para consultas ilimitadas</div>
+            <div style={{fontSize:13,color:'#DC2626',marginBottom:12}}>Volvé mañana o activá tu Versión Premium para consultas ilimitadas</div>
             <a href="https://recetas.quecocino.today/membresia" style={{display:'inline-block',padding:'10px 20px',background:'linear-gradient(135deg,#B85C2A,#D4884E)',color:'white',borderRadius:'10px',textDecoration:'none',fontWeight:600,fontSize:13}}>
               Activar Versión Premium 🚀
             </a>
@@ -719,11 +729,11 @@ export default function HeladeraApp() {
 
         {isPremium && (
           <div style={{textAlign:'center', marginTop:48, paddingBottom:16}}>
-            <a href="https://wa.link/6qd97a" 
-  target="_blank"
-  style={{fontSize:12, color:'var(--muted)', textDecoration:'underline'}}>
-  Cancelar Versión Premium
-</a>
+            <a href="https://wa.link/6qd97a"
+              target="_blank"
+              style={{fontSize:12, color:'var(--muted)', textDecoration:'underline'}}>
+              Cancelar Versión Premium
+            </a>
           </div>
         )}
       </div>
