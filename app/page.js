@@ -365,7 +365,14 @@ function AuthScreen({ onLogin }) {
         {!showReset && (
           <div className="auth-field">
             <label>Contraseña</label>
-            <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" onKeyDown={e => e.key === "Enter" && handle()} />
+            <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" onKeyDown={e => e.key === "Enter" && handle()} id="auth-password" />
+</div>
+<div style={{display:'flex', alignItems:'center', gap:8, marginTop:8}}>
+  <input type="checkbox" id="show-password" onChange={e => {
+    const input = document.getElementById('auth-password');
+    input.type = e.target.checked ? 'text' : 'password';
+  }} style={{width:16, height:16, cursor:'pointer', accentColor:'var(--accent)'}} />
+  <label htmlFor="show-password" style={{fontSize:13, color:'var(--muted)', cursor:'pointer'}}>Mostrar contraseña</label>
           </div>
         )}
         {!showReset ? (
