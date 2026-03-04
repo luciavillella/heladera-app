@@ -662,7 +662,7 @@ export default function HeladeraApp() {
 
             {image && (
               <button className="btn-analyze" onClick={analyze} disabled={loading || !puedeConsultar}>
-                ✨ &nbsp; {!puedeConsultar ? "Límite diario alcanzado" : "Generar mis 3 recetas"}
+                ✨ &nbsp; {!puedeConsultar ? "Límite diario alcanzado" : "Mostrar mis 3 recetas"}
               </button>
             )}
 
