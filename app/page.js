@@ -53,7 +53,7 @@ const css = `
   .header h1 {
     font-family: 'Lora', serif;
     font-size: clamp(24px, 3.5vw, 36px);
-    font-weight: 800; line-height: 1.2;
+    font-weight: 600; line-height: 1.2;
     color: var(--text); margin: 0 0 16px;
   }
   .header h1 em { font-style: italic; color: var(--accent); }
@@ -241,7 +241,7 @@ const css = `
     }
   }
   .auth-title {
-    font-family: 'Lora', serif; font-size: 20px; font-weight: 600;
+    font-family: 'Outfit', sans-serif; font-size: 26px; font-weight: 700;
     color: var(--text); margin-bottom: 6px; text-align: center;
   }
   .auth-sub { font-size: 14px; color: var(--muted); text-align: center; margin-bottom: 28px; }
