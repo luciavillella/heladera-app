@@ -11,7 +11,7 @@ export async function POST(request) {
         return Response.json({ error: "No se recibió imagen" }, { status: 400 });
       }
       const response = await client.messages.create({
-        model: "claude-opus-4-6",
+        model: "claude-haiku-3-20240307",
         max_tokens: 300,
         messages: [
           {
@@ -49,7 +49,7 @@ Respondé SOLO con este JSON, sin texto extra, sin markdown, sin emojis en los t
 {"recetas":[{"nombre":"nombre","emoji":"🍳","tiempo":"20 min","dificultad":"Fácil","porciones":"2","ingredientes":["item1","item2"],"pasos":["paso1","paso2"],"beneficios":["beneficio1","beneficio2"]}]}`;
 
       const response = await client.messages.create({
-        model: "claude-opus-4-6",
+        model: "claude-haiku-3-20240307",
         max_tokens: 1500,
         messages: [{ role: "user", content: prompt }],
       });
