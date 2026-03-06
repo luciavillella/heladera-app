@@ -1,4 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
+
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 export async function POST(request) {
@@ -11,7 +12,7 @@ export async function POST(request) {
         return Response.json({ error: "No se recibió imagen" }, { status: 400 });
       }
       const response = await client.messages.create({
-        model: "claude-haiku-3-20240307",
+        model: "claude-haiku-3-5-20241022", // Haiku con soporte de visión
         max_tokens: 300,
         messages: [
           {
@@ -21,7 +22,10 @@ export async function POST(request) {
                 type: "image",
                 source: { type: "base64", media_type: mediaType || "image/jpeg", data: imageBase64 },
               },
-              { type: "text", text: `Analizá esta imagen e identificá todos los ingredientes alimenticios visibles. Respondé SOLO con una lista separada por comas, sin texto extra. Ejemplo: "tomates, queso, huevos, cebolla"` },
+              {
+                type: "text",
+                text: `Analizá esta imagen e identificá todos los ingredientes alimenticios visibles. Respondé SOLO con una lista separada por comas, sin texto extra. Ejemplo: "tomates, queso, huevos, cebolla"`,
+              },
             ],
           },
         ],
@@ -49,7 +53,7 @@ Respondé SOLO con este JSON, sin texto extra, sin markdown, sin emojis en los t
 {"recetas":[{"nombre":"nombre","emoji":"🍳","tiempo":"20 min","dificultad":"Fácil","porciones":"2","ingredientes":["item1","item2"],"pasos":["paso1","paso2"],"beneficios":["beneficio1","beneficio2"]}]}`;
 
       const response = await client.messages.create({
-        model: "claude-haiku-3-20240307",
+        model: "claude-haiku-3-20240307", // Haiku clásico para texto, más económico
         max_tokens: 1500,
         messages: [{ role: "user", content: prompt }],
       });
