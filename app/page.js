@@ -299,7 +299,7 @@ export default function HeladeraApp() {
   }, [user]);
 
   const loadProfile = async (userId) => {
-    await fetch('/api/crear-perfil', {
+    const res = await fetch('/api/crear-perfil', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ 
@@ -308,8 +308,10 @@ export default function HeladeraApp() {
         nombre: user?.fullName || "",
       }),
     });
-    const { data } = await supabase.from('user_profiles').select('*').eq('id', userId).single();
-    setProfile(data);
+    const data = await res.json();
+    if (data.profile) {
+      setProfile(data.profile);
+    }
   };
 
   const loadFavoritos = async (userId) => {
