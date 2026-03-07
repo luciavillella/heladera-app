@@ -440,7 +440,7 @@ export default function HeladeraApp() {
     setInputKey(k => k + 1);
   };
 
-  const RecetaCard = ({ r, showFav = true }) => (
+  const RecetaCard = ({ r, showFav = true, inFavoritos = false }) => (
     <div className="recipe-card">
       <div className="recipe-header">
         <div className="recipe-emoji">{r.emoji}</div>
@@ -478,8 +478,9 @@ export default function HeladeraApp() {
             <button
               className={`btn-fav ${savedIds[r.nombre] ? 'saved' : ''}`}
               onClick={() => toggleFavorito(r)}
+              style={inFavoritos ? { borderColor: '#DC2626', color: '#DC2626', background: 'rgba(220,38,38,0.06)' } : {}}
             >
-              {savedIds[r.nombre] ? '❤️ Guardada' : '🤍 Guardar receta'}
+              {inFavoritos ? '🗑️ Eliminar de favoritos' : (savedIds[r.nombre] ? '❤️ Guardada' : '🤍 Guardar receta')}
             </button>
             {favError && <div style={{ fontSize: 12, color: '#DC2626', marginTop: 8 }}>⚠️ {favError}</div>}
           </>
@@ -573,7 +574,7 @@ export default function HeladeraApp() {
             ) : (
               <>
                 <div className="results-title">Mis recetas favoritas</div>
-                {favoritos.map((r, i) => <RecetaCard key={i} r={r} showFav={true} />)}
+                {favoritos.map((r, i) => <RecetaCard key={i} r={r} showFav={true} inFavoritos={true} />)}
               </>
             )}
           </div>
