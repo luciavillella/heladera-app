@@ -8,6 +8,7 @@ const supabaseAdmin = createClient(
 export async function POST(request) {
   try {
     const { userId } = await request.json();
+    console.log('userId recibido:', userId);
 
     if (!userId) {
       return Response.json({ error: 'userId requerido' }, { status: 400 });
@@ -38,7 +39,10 @@ export async function POST(request) {
         ultima_consulta: null,
       });
 
-    if (error) throw error;
+    if (error) {
+      console.error('Error insertando perfil:', error);
+      throw error;
+    }
 
     return Response.json({ ok: true, created: true });
   } catch (error) {
