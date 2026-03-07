@@ -1,7 +1,7 @@
 "use client";
 import { useState, useCallback, useRef, useEffect } from "react";
 import { useUser, useClerk } from "@clerk/nextjs";
-import { createClient } from "./lib/supabase";
+import { useSupabaseClient } from "./lib/supabase";
 
 const TIPOS_COMIDA = ["Desayuno", "Almuerzo", "Merienda", "Cena", "Colación", "Postre", "Smoothie"];
 const PERSONAS_OPT = ["1 persona", "2 personas", "3-4 personas", "5+ personas"];
@@ -289,7 +289,7 @@ export default function HeladeraApp() {
   const [savedIds, setSavedIds] = useState({});
   const fileRef = useRef();
   const [inputKey, setInputKey] = useState(0);
-  const supabase = createClient();
+  const supabase = useSupabaseClient();
 
   useEffect(() => {
     if (user) {
@@ -467,7 +467,7 @@ export default function HeladeraApp() {
             className={`btn-fav ${savedIds[r.nombre] ? 'saved' : ''}`}
             onClick={() => toggleFavorito(r)}
           >
-            {savedIds[r.nombre] ? (showFav && activeTab === 'favoritos' ? '🗑️ Eliminar' : '❤️ Guardada') : '🤍 Guardar receta'}
+            {savedIds[r.nombre] ? '❤️ Guardada' : '🤍 Guardar receta'}
           </button>
         )}
       </div>
