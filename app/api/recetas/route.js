@@ -1,7 +1,3 @@
-import Groq from "groq-sdk";
-
-const client = new Groq({ apiKey: process.env.GROQ_API_KEY });
-
 export async function POST(request) {
   try {
     const body = await request.json();
@@ -12,29 +8,37 @@ export async function POST(request) {
         return Response.json({ error: "No se recibió imagen" }, { status: 400 });
       }
 
-      const response = await client.chat.completions.create({
-        model: "meta-llama/llama-4-scout-17b-16e-instruct",
-        max_tokens: 300,
-        messages: [
-          {
-            role: "user",
-            content: [
-              {
-                type: "image_url",
-                image_url: {
-                  url: `data:${mediaType || "image/jpeg"};base64,${imageBase64}`,
+      const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${process.env.GROQ_API_KEY}`,
+        },
+        body: JSON.stringify({
+          model: "meta-llama/llama-4-scout-17b-16e-instruct",
+          max_tokens: 300,
+          messages: [
+            {
+              role: "user",
+              content: [
+                {
+                  type: "image_url",
+                  image_url: {
+                    url: `data:${mediaType || "image/jpeg"};base64,${imageBase64}`,
+                  },
                 },
-              },
-              {
-                type: "text",
-                text: `Analizá esta imagen e identificá todos los ingredientes alimenticios visibles. Respondé SOLO con una lista separada por comas, sin texto extra. Ejemplo: "tomates, queso, huevos, cebolla"`,
-              },
-            ],
-          },
-        ],
+                {
+                  type: "text",
+                  text: `Analizá esta imagen e identificá todos los ingredientes alimenticios visibles. Respondé SOLO con una lista separada por comas, sin texto extra. Ejemplo: "tomates, queso, huevos, cebolla"`,
+                },
+              ],
+            },
+          ],
+        }),
       });
 
-      const ingredientes = response.choices[0]?.message?.content?.trim() || "";
+      const data = await response.json();
+      const ingredientes = data.choices?.[0]?.message?.content?.trim() || "";
       return Response.json({ ingredientesDetectados: ingredientes });
     }
 
@@ -57,13 +61,21 @@ Generá exactamente 3 recetas usando EXCLUSIVAMENTE esos ingredientes. Solo pod�
 Respondé SOLO con este JSON, sin texto extra, sin markdown, sin emojis en los textos de ingredientes o pasos:
 {"recetas":[{"nombre":"nombre","emoji":"🍳","tiempo":"20 min","dificultad":"Fácil","porciones":"2","ingredientes":["item1","item2"],"pasos":["paso1","paso2"],"beneficios":["beneficio1","beneficio2"]}]}`;
 
-      const response = await client.chat.completions.create({
-        model: "meta-llama/llama-4-scout-17b-16e-instruct",
-        max_tokens: 1500,
-        messages: [{ role: "user", content: prompt }],
+      const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${process.env.GROQ_API_KEY}`,
+        },
+        body: JSON.stringify({
+          model: "meta-llama/llama-4-scout-17b-16e-instruct",
+          max_tokens: 1500,
+          messages: [{ role: "user", content: prompt }],
+        }),
       });
 
-      const text = response.choices[0]?.message?.content || "";
+      const data = await response.json();
+      const text = data.choices?.[0]?.message?.content || "";
       const cleaned = text.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
       const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
       if (!jsonMatch) {
@@ -77,7 +89,7 @@ Respondé SOLO con este JSON, sin texto extra, sin markdown, sin emojis en los t
 
   } catch (error) {
     console.error("Error:", error);
-    const mensaje = error.message?.includes('overloaded') || error.message?.includes('rate_limit')
+    const mensaje = error.message?.includes('rate_limit')
       ? "Estamos con mucha demanda en este momento, intentá de nuevo en unos segundos 🙏"
       : "Algo salió mal: " + error.message;
     return Response.json({ error: mensaje }, { status: 500 });
