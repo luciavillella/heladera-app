@@ -23,22 +23,32 @@ export async function POST(request) {
     }
 
     if (accion === "agregar") {
+      console.log("RECETA RECIBIDA:", JSON.stringify(receta));
+      
+      const ingredientes = Array.isArray(receta.ingredientes) ? receta.ingredientes : [];
+      const pasos = Array.isArray(receta.pasos) ? receta.pasos : [];
+      const beneficios = Array.isArray(receta.beneficios) ? receta.beneficios : [];
+
       const { data, error } = await supabase
         .from('favoritos')
         .insert({
           user_id: userId,
-          nombre: receta.nombre,
-          emoji: receta.emoji,
-          tiempo: receta.tiempo,
-          dificultad: receta.dificultad,
-          porciones: receta.porciones,
-          ingredientes: receta.ingredientes,
-          pasos: receta.pasos,
-          beneficios: receta.beneficios,
+          nombre: receta.nombre || '',
+          emoji: receta.emoji || '',
+          tiempo: receta.tiempo || '',
+          dificultad: receta.dificultad || '',
+          porciones: receta.porciones || '',
+          ingredientes,
+          pasos,
+          beneficios,
         })
         .select()
         .single();
-      if (error) throw error;
+      
+      if (error) {
+        console.log("ERROR SUPABASE:", JSON.stringify(error));
+        throw error;
+      }
       return Response.json({ favorito: data });
     }
 
@@ -58,4 +68,3 @@ export async function POST(request) {
     return Response.json({ error: error.message }, { status: 500 });
   }
 }
-
