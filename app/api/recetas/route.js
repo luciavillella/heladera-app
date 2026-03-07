@@ -62,10 +62,19 @@ export async function POST(request) {
         ? `\n\nTené en cuenta estas preferencias:\n${preferencias.join("\n")}`
         : "";
 
-      const prompt = `Tengo estos ingredientes disponibles: ${ingredientesEditados}.
-Generá exactamente 3 recetas usando EXCLUSIVAMENTE esos ingredientes. Solo podés asumir sal, pimienta y aceite. Para cada receta agregá 2 o 3 beneficios nutricionales simples como vitaminas, minerales o para qué es bueno ese plato, sin términos médicos ni promesas de salud.${prefText}
-Respondé SOLO con este JSON, sin texto extra, sin markdown, sin emojis en los textos de ingredientes o pasos:
-{"recetas":[{"nombre":"nombre","emoji":"🍳","tiempo":"20 min","dificultad":"Fácil","porciones":"2","ingredientes":["item1","item2"],"pasos":["paso1","paso2"],"beneficios":["beneficio1","beneficio2"]}]}`;
+      const prompt = `Sos un chef creativo y apasionado de cocina casera. Tengo estos ingredientes disponibles: ${ingredientesEditados}.
+
+Creá exactamente 3 recetas ORIGINALES y APETITOSAS usando principalmente esos ingredientes. Solo podés asumir sal, pimienta y aceite como extras.
+
+REGLAS IMPORTANTES:
+- Los nombres deben ser creativos, evocadores y apetitosos (ej: "Tortilla dorada con queso derretido" en vez de "Tortilla de huevo")
+- Cada paso debe ser DETALLADO y ESPECÍFICO: incluí tiempos de cocción, temperatura, texturas esperadas, trucos del chef. Mínimo 2 oraciones por paso.
+- Las recetas deben ser variadas entre sí: si una es salteada, que otra sea al horno o cruda, etc.
+- Pensá en combinaciones de sabores interesantes, no solo las más obvias
+- Para cada receta agregá 2 o 3 beneficios nutricionales simples y concretos${prefText}
+
+Respondé SOLO con este JSON exacto, sin texto extra, sin markdown, sin emojis en los textos de ingredientes o pasos:
+{"recetas":[{"nombre":"nombre creativo","emoji":"🍳","tiempo":"20 min","dificultad":"Fácil","porciones":"2","ingredientes":["item1 con cantidad","item2 con cantidad"],"pasos":["Paso detallado con técnica y tiempo de cocción. Descripción de textura o color esperado.","Segundo paso igual de detallado."],"beneficios":["beneficio concreto 1","beneficio concreto 2"]}]}`;
 
       const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
         method: "POST",
@@ -75,7 +84,7 @@ Respondé SOLO con este JSON, sin texto extra, sin markdown, sin emojis en los t
         },
         body: JSON.stringify({
           model: "meta-llama/llama-4-scout-17b-16e-instruct",
-          max_tokens: 1500,
+          max_tokens: 2500,
           messages: [{ role: "user", content: prompt }],
         }),
       });
