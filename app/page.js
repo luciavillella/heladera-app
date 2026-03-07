@@ -1,8 +1,3 @@
-Ap./page.js
-
-sábado, 7 de marzo de 2026
-16:28
-
 "use client";
 import { useState, useCallback, useRef, useEffect } from "react";
 import { useUser, useClerk } from "@clerk/nextjs";
@@ -288,6 +283,7 @@ export default function HeladeraApp() {
   const [dieta, setDieta] = useState([]);
   const [favoritos, setFavoritos] = useState([]);
   const [savedIds, setSavedIds] = useState({});
+  const [favError, setFavError] = useState(null);
   const fileRef = useRef();
   const [inputKey, setInputKey] = useState(0);
 
@@ -313,41 +309,54 @@ export default function HeladeraApp() {
   };
 
   const loadFavoritos = async (userId) => {
-    const res = await fetch('/api/favoritos', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ accion: 'cargar', userId }),
-    });
-    const data = await res.json();
-    if (data.favoritos) {
-      setFavoritos(data.favoritos);
-      const ids = {};
-      data.favoritos.forEach(f => { ids[f.nombre] = f.id; });
-      setSavedIds(ids);
+    try {
+      const res = await fetch('/api/favoritos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ accion: 'cargar', userId }),
+      });
+      const data = await res.json();
+      if (data.favoritos) {
+        setFavoritos(data.favoritos);
+        const ids = {};
+        data.favoritos.forEach(f => { ids[f.nombre] = f.id; });
+        setSavedIds(ids);
+      }
+    } catch (e) {
+      console.error("Error cargando favoritos:", e);
     }
   };
 
   const toggleFavorito = async (receta) => {
     if (!user) return;
-    if (savedIds[receta.nombre]) {
-      await fetch('/api/favoritos', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ accion: 'eliminar', userId: user.id, favoritoId: savedIds[receta.nombre] }),
-      });
-      setSavedIds(prev => { const n = {...prev}; delete n[receta.nombre]; return n; });
-      setFavoritos(prev => prev.filter(f => f.nombre !== receta.nombre));
-    } else {
-      const res = await fetch('/api/favoritos', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ accion: 'agregar', userId: user.id, receta }),
-      });
-      const data = await res.json();
-      if (data.favorito) {
-        setSavedIds(prev => ({ ...prev, [receta.nombre]: data.favorito.id }));
-        setFavoritos(prev => [data.favorito, ...prev]);
+    setFavError(null);
+    try {
+      if (savedIds[receta.nombre]) {
+        const res = await fetch('/api/favoritos', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ accion: 'eliminar', userId: user.id, favoritoId: savedIds[receta.nombre] }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Error al eliminar");
+        setSavedIds(prev => { const n = {...prev}; delete n[receta.nombre]; return n; });
+        setFavoritos(prev => prev.filter(f => f.nombre !== receta.nombre));
+      } else {
+        const res = await fetch('/api/favoritos', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ accion: 'agregar', userId: user.id, receta }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Error al guardar");
+        if (data.favorito) {
+          setSavedIds(prev => ({ ...prev, [receta.nombre]: data.favorito.id }));
+          setFavoritos(prev => [data.favorito, ...prev]);
+        }
       }
+    } catch (e) {
+      console.error("Error favorito:", e);
+      setFavError("No se pudo guardar: " + e.message);
     }
   };
 
@@ -465,12 +474,15 @@ export default function HeladeraApp() {
           ))}
         </ol>
         {showFav && (
-          <button
-            className={`btn-fav ${savedIds[r.nombre] ? 'saved' : ''}`}
-            onClick={() => toggleFavorito(r)}
-          >
-            {savedIds[r.nombre] ? '❤️ Guardada' : '🤍 Guardar receta'}
-          </button>
+          <>
+            <button
+              className={`btn-fav ${savedIds[r.nombre] ? 'saved' : ''}`}
+              onClick={() => toggleFavorito(r)}
+            >
+              {savedIds[r.nombre] ? '❤️ Guardada' : '🤍 Guardar receta'}
+            </button>
+            {favError && <div style={{ fontSize: 12, color: '#DC2626', marginTop: 8 }}>⚠️ {favError}</div>}
+          </>
         )}
       </div>
     </div>
