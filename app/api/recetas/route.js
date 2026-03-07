@@ -16,7 +16,7 @@ export async function POST(request) {
         },
         body: JSON.stringify({
           model: "meta-llama/llama-4-scout-17b-16e-instruct",
-          max_tokens: 300,
+          max_tokens: 400,
           messages: [
             {
               role: "user",
@@ -29,7 +29,13 @@ export async function POST(request) {
                 },
                 {
                   type: "text",
-                  text: `Analizá esta imagen e identificá todos los ingredientes alimenticios visibles. Respondé SOLO con una lista separada por comas, sin texto extra. Ejemplo: "tomates, queso, huevos, cebolla"`,
+                  text: `Sos un asistente de cocina. Mirá esta imagen y listá ÚNICAMENTE los alimentos y ingredientes comestibles que ves. 
+
+IGNORÁ absolutamente todo lo que no sea comida: botellas, envases, recipientes, bolsas, cajas, tapas, etiquetas, bebidas en botella, utensilios, y cualquier objeto no comestible.
+
+INCLUÍ solo: verduras, frutas, carnes, lácteos, huevos, granos, legumbres, condimentos sin envase, y alimentos visibles sin empaque.
+
+Respondé ÚNICAMENTE con los nombres de los alimentos separados por comas, en español, sin cantidades ni descripciones. Ejemplo: "tomates, queso, huevos, cebolla, zanahoria, pechuga de pollo"`,
                 },
               ],
             },
@@ -38,8 +44,6 @@ export async function POST(request) {
       });
 
       const data = await response.json();
-      console.log("GROQ detectar response:", JSON.stringify(data));
-
       if (!response.ok) {
         return Response.json({ error: data.error?.message || "Error de Groq" }, { status: 500 });
       }
@@ -59,22 +63,33 @@ export async function POST(request) {
       if (dieta && dieta.length > 0) preferencias.push(`Preferencias dietarias: ${dieta.join(", ")}`);
       if (tiempo) preferencias.push(`Tiempo disponible: ${tiempo}`);
       const prefText = preferencias.length > 0
-        ? `\n\nTené en cuenta estas preferencias:\n${preferencias.join("\n")}`
+        ? `\n\nPreferencias del usuario:\n${preferencias.join("\n")}`
         : "";
 
-      const prompt = `Sos un chef creativo y apasionado de cocina casera. Tengo estos ingredientes disponibles: ${ingredientesEditados}.
+      const tiempoIndicado = tiempo || "sin límite de tiempo";
 
-Creá exactamente 3 recetas ORIGINALES y APETITOSAS usando principalmente esos ingredientes. Solo podés asumir sal, pimienta y aceite como extras.
+      const prompt = `Sos un chef latinoamericano creativo con años de experiencia en cocina casera y de autor. Tu especialidad es transformar ingredientes simples en platos sorprendentes, sabrosos y originales inspirados en la cocina de Argentina, México, Perú, Colombia y el resto de Latinoamérica.
 
-REGLAS IMPORTANTES:
-- Los nombres deben ser creativos, evocadores y apetitosos (ej: "Tortilla dorada con queso derretido" en vez de "Tortilla de huevo")
-- Cada paso debe ser DETALLADO y ESPECÍFICO: incluí tiempos de cocción, temperatura, texturas esperadas, trucos del chef. Mínimo 2 oraciones por paso.
-- Las recetas deben ser variadas entre sí: si una es salteada, que otra sea al horno o cruda, etc.
-- Pensá en combinaciones de sabores interesantes, no solo las más obvias
-- Para cada receta agregá 2 o 3 beneficios nutricionales simples y concretos${prefText}
+Ingredientes disponibles: ${ingredientesEditados}
+Solo podés usar además: sal, pimienta negra y aceite.
+Tiempo disponible: ${tiempoIndicado}${prefText}
 
-Respondé SOLO con este JSON exacto, sin texto extra, sin markdown, sin emojis en los textos de ingredientes o pasos:
-{"recetas":[{"nombre":"nombre creativo","emoji":"🍳","tiempo":"20 min","dificultad":"Fácil","porciones":"2","ingredientes":["item1 con cantidad","item2 con cantidad"],"pasos":["Paso detallado con técnica y tiempo de cocción. Descripción de textura o color esperado.","Segundo paso igual de detallado."],"beneficios":["beneficio concreto 1","beneficio concreto 2"]}]}`;
+Tu tarea es crear exactamente 3 recetas que cumplan con estas reglas:
+
+NOMBRES: Creativos, apetitosos y evocadores. Nada genérico. En vez de "Arroz con pollo" decí "Arroz cremoso al limón con pollo dorado y hierbas". El nombre debe dar ganas de comerlo.
+
+VARIEDAD: Las 3 recetas deben ser técnicamente distintas entre sí (una salteada, una horneada, una cruda o fría, por ejemplo). Explorá distintas texturas y temperaturas.
+
+CREATIVIDAD: Buscá combinaciones de sabores que sorprendan pero que funcionen. Inspirate en recetas latinoamericanas tradicionales o de autor. Podés hacer versiones originales de clásicos.
+
+PASOS: Cada paso debe ser detallado y útil para alguien cocinando en casa. Incluí: técnica exacta, tiempo de cocción, temperatura si aplica, punto de cocción (dorado, al dente, cremoso), y algún consejo de chef. Cada paso debe tener al menos 2 oraciones. Ajustá la cantidad de pasos al tiempo disponible: si el tiempo es corto, menos pasos y técnicas rápidas; si hay más tiempo, podés desarrollar más.
+
+INGREDIENTES: Listá cada ingrediente con su cantidad aproximada para las porciones indicadas.
+
+BENEFICIOS: 2 o 3 beneficios nutricionales concretos y simples de cada receta.
+
+Respondé SOLO con este JSON exacto, sin texto extra, sin markdown, sin emojis dentro de los textos de ingredientes o pasos:
+{"recetas":[{"nombre":"nombre creativo y apetitoso","emoji":"🍳","tiempo":"X min","dificultad":"Fácil/Media/Difícil","porciones":"X personas","ingredientes":["ingrediente con cantidad","ingrediente con cantidad"],"pasos":["Paso 1 detallado con técnica y tiempo. Consejo de chef incluido.","Paso 2 igual de detallado."],"beneficios":["beneficio concreto 1","beneficio concreto 2"]}]}`;
 
       const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
         method: "POST",
@@ -84,14 +99,12 @@ Respondé SOLO con este JSON exacto, sin texto extra, sin markdown, sin emojis e
         },
         body: JSON.stringify({
           model: "meta-llama/llama-4-scout-17b-16e-instruct",
-          max_tokens: 2500,
+          max_tokens: 3000,
           messages: [{ role: "user", content: prompt }],
         }),
       });
 
       const data = await response.json();
-      console.log("GROQ recetas response:", JSON.stringify(data).slice(0, 500));
-
       if (!response.ok) {
         return Response.json({ error: data.error?.message || "Error de Groq" }, { status: 500 });
       }
