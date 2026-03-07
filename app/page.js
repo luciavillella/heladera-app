@@ -1,5 +1,6 @@
 "use client";
 import { useState, useCallback, useRef, useEffect } from "react";
+import { useUser, useClerk } from "@clerk/nextjs";
 import { createClient } from "./lib/supabase";
 
 const TIPOS_COMIDA = ["Desayuno", "Almuerzo", "Merienda", "Cena", "Colación", "Postre", "Smoothie"];
@@ -218,67 +219,6 @@ const css = `
   }
   .btn-reset:hover { border-color: var(--accent); color: var(--accent); }
 
-  /* AUTH STYLES */
-  .auth-wrap {
-    min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center;
-    padding: 24px;
-  }
-  .auth-card {
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: 24px; padding: 40px; width: 100%; max-width: 420px;
-    box-shadow: var(--shadow-lg);
-  }
-  .auth-logo-wrap {
-    text-align: center; margin-bottom: 28px;
-  }
-  .auth-logo-wrap img {
-    width: 220px; max-width: 80%;
-  }
-  @media (max-width: 600px) {
-    .auth-logo-wrap img {
-      width: 280px; max-width: 90%;
-    }
-  }
-  .auth-title {
-    font-family: 'Lora', serif; font-size: 28px; font-weight: 600;
-    color: var(--text); margin-bottom: 6px; text-align: center;
-  }
-  .auth-sub { font-size: 14px; color: var(--muted); text-align: center; margin-bottom: 28px; }
-  .auth-tabs {
-    display: flex; gap: 0; margin-bottom: 28px;
-    border: 1.5px solid var(--border); border-radius: 12px; overflow: hidden;
-  }
-  .auth-tab {
-    flex: 1; padding: 10px; font-family: 'Outfit', sans-serif;
-    font-size: 14px; font-weight: 500; cursor: pointer;
-    background: none; border: none; color: var(--muted); transition: all 0.2s;
-  }
-  .auth-tab.active { background: var(--accent); color: white; }
-  .auth-field { margin-bottom: 16px; }
-  .auth-field label { display: block; font-size: 13px; font-weight: 500; color: var(--muted); margin-bottom: 6px; }
-  .auth-field input {
-    width: 100%; padding: 11px 14px; border: 1.5px solid var(--border);
-    border-radius: 10px; background: var(--bg);
-    font-family: 'Outfit', sans-serif; font-size: 14px; color: var(--text);
-    box-sizing: border-box; transition: border-color 0.2s;
-  }
-  .auth-field input:focus { outline: none; border-color: var(--accent); }
-  .btn-auth {
-    width: 100%; padding: 14px; background: linear-gradient(135deg, var(--accent), var(--accent2));
-    color: white; border: none; border-radius: 12px;
-    font-family: 'Outfit', sans-serif; font-size: 15px; font-weight: 600;
-    cursor: pointer; transition: all 0.3s; margin-top: 8px;
-    box-shadow: 0 4px 16px rgba(184,92,42,0.3);
-  }
-  .btn-auth:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(184,92,42,0.4); }
-  .btn-auth:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
-  .auth-msg {
-    margin-top: 16px; padding: 12px 16px; border-radius: 10px;
-    font-size: 13px; text-align: center;
-  }
-  .auth-msg.success { background: var(--green-bg); border: 1px solid var(--green-bd); color: var(--green); }
-  .auth-msg.error { background: #FEF2F2; border: 1px solid #FECACA; color: #DC2626; }
-
   /* TOP BAR */
   .topbar {
     display: flex; align-items: center; justify-content: space-between;
@@ -303,174 +243,35 @@ const css = `
   }
 `;
 
-// ── Auth Component ──────────────────────────────────────────────
-function AuthScreen({ onLogin }) {
-  const [tab, setTab] = useState("login");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [msg, setMsg] = useState(null);
-  const [showReset, setShowReset] = useState(false);
-  const supabase = createClient();
-
-  const handle = async () => {
-    setLoading(true); setMsg(null);
-    try {
-      if (tab === "login") {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) throw error;
-        onLogin();
-      } else {
-        const { error } = await supabase.auth.signUp({ email, password });
-        if (error) throw error;
-        setMsg({ type: "success", text: "¡Cuenta creada! Revisá tu email para confirmar." });
-      }
-    } catch (err) {
-      setMsg({ type: "error", text: err.message });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleReset = async () => {
-    if (!email) { setMsg({ type: "error", text: "Ingresá tu email primero." }); return; }
-    setLoading(true); setMsg(null);
-    try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: "https://app.quecocino.today/reset-password",
-      });
-      if (error) throw error;
-      setMsg({ type: "success", text: "¡Te enviamos un email para restablecer tu contraseña!" });
-      setShowReset(false);
-    } catch (err) {
-      setMsg({ type: "error", text: err.message });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <div className="auth-wrap">
-      <div className="auth-logo-wrap">
-        <img src="/logo.portal.png" alt="Que Cocino Today" />
-      </div>
-      <div className="auth-card">
-        <div className="auth-title">Qué cocino <em style={{fontStyle:'italic', color:'var(--accent)'}}>Today</em> 🍳</div>
-        <div className="auth-sub">Ingresá para ver tus recetas personalizadas</div>
-        <div className="auth-tabs">
-          <button className={`auth-tab ${tab === "login" ? "active" : ""}`} onClick={() => { setTab("login"); setShowReset(false); setMsg(null); }}>Ingresar</button>
-          <button className={`auth-tab ${tab === "signup" ? "active" : ""}`} onClick={() => { setTab("signup"); setShowReset(false); setMsg(null); }}>Registrarse</button>
-        </div>
-        <div className="auth-field">
-          <label>Email</label>
-          <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="tu@email.com" />
-        </div>
-        {!showReset && (
-          <>
-            <div className="auth-field">
-              <label>Contraseña</label>
-              <input
-                type={showPassword ? "text" : "password"}
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                placeholder="••••••••"
-                onKeyDown={e => e.key === "Enter" && handle()}
-              />
-            </div>
-            <div style={{display:'flex', alignItems:'center', gap:8, marginTop:-8, marginBottom:16}}>
-              <input
-                type="checkbox"
-                id="show-password"
-                checked={showPassword}
-                onChange={e => setShowPassword(e.target.checked)}
-                style={{width:16, height:16, cursor:'pointer', accentColor:'#B85C2A'}}
-              />
-              <label htmlFor="show-password" style={{fontSize:13, color:'#7A7060', cursor:'pointer'}}>
-                Mostrar contraseña
-              </label>
-            </div>
-          </>
-        )}
-        {!showReset ? (
-          <>
-            <button className="btn-auth" onClick={handle} disabled={loading}>
-              {loading ? "Cargando..." : tab === "login" ? "Ingresar" : "Crear cuenta"}
-            </button>
-            {tab === "login" && (
-              <div style={{textAlign:'center', marginTop:12, display:'flex', flexDirection:'column', gap:8}}>
-                <button onClick={() => { setShowReset(true); setMsg(null); }}
-                  style={{background:'none', border:'none', color:'var(--accent)', fontSize:13, cursor:'pointer', textDecoration:'underline'}}>
-                  ¿Olvidaste tu contraseña?
-                </button>
-                <p style={{fontSize:13, color:'var(--muted)', margin:0}}>
-                  ¿Primera vez?{' '}
-                  <button onClick={() => { setTab("signup"); setMsg(null); }}
-                    style={{background:'none', border:'none', color:'var(--accent)', fontSize:13, cursor:'pointer', textDecoration:'underline', padding:0}}>
-                    Registrate acá
-                  </button>
-                </p>
-              </div>
-            )}
-          </>
-        ) : (
-          <>
-            <button className="btn-auth" onClick={handleReset} disabled={loading}>
-              {loading ? "Enviando..." : "Enviar email de recuperación"}
-            </button>
-            <div style={{textAlign:'center', marginTop:12}}>
-              <button onClick={() => { setShowReset(false); setMsg(null); }}
-                style={{background:'none', border:'none', color:'var(--muted)', fontSize:13, cursor:'pointer', textDecoration:'underline'}}>
-                Volver al login
-              </button>
-            </div>
-          </>
-        )}
-        {msg && <div className={`auth-msg ${msg.type}`}>{msg.text}</div>}
-      </div>
-    </div>
-  );
-}
-
-// ── Main App ────────────────────────────────────────────────────
 export default function HeladeraApp() {
-  const [user, setUser] = useState(undefined);
+  const { user, isLoaded } = useUser();
+  const { signOut } = useClerk();
   const [profile, setProfile] = useState(null);
-  const [image, setImage]           = useState(null);
-  const [imageFile, setImageFile]   = useState(null);
-  const [dragOver, setDragOver]     = useState(false);
-  const [loading, setLoading]       = useState(false);
+  const [image, setImage] = useState(null);
+  const [imageFile, setImageFile] = useState(null);
+  const [dragOver, setDragOver] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [loadingMsg, setLoadingMsg] = useState("Analizando tus ingredientes...");
-  const [result, setResult]         = useState(null);
-  const [error, setError]           = useState(null);
+  const [result, setResult] = useState(null);
+  const [error, setError] = useState(null);
   const [ingredientesDetectados, setIngredientesDetectados] = useState(null);
-  const [ingredientesEditados, setIngredientesEditados]     = useState("");
+  const [ingredientesEditados, setIngredientesEditados] = useState("");
   const [tipoComida, setTipoComida] = useState("");
-  const [personas, setPersonas]     = useState("");
-  const [tiempo, setTiempo]         = useState("");
-  const [dieta, setDieta]           = useState([]);
-  const fileRef                     = useRef();
-  const [inputKey, setInputKey]     = useState(0);
+  const [personas, setPersonas] = useState("");
+  const [tiempo, setTiempo] = useState("");
+  const [dieta, setDieta] = useState([]);
+  const fileRef = useRef();
+  const [inputKey, setInputKey] = useState(0);
   const supabase = createClient();
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      setUser(data.session?.user ?? null);
-      if (data.session?.user) loadProfile(data.session.user.id);
-    });
-    const { data: listener } = supabase.auth.onAuthStateChange((_e, session) => {
-      setUser(session?.user ?? null);
-      if (session?.user) loadProfile(session.user.id);
-    });
-    return () => listener.subscription.unsubscribe();
-  }, []);
+    if (user) loadProfile(user.id);
+  }, [user]);
 
   const loadProfile = async (userId) => {
     const { data } = await supabase.from('user_profiles').select('*').eq('id', userId).single();
     setProfile(data);
   };
-
-  const logout = async () => { await supabase.auth.signOut(); };
 
   const isPremium = profile?.is_premium;
   const trialEnd = profile?.trial_ends_at ? new Date(profile.trial_ends_at) : null;
@@ -492,10 +293,8 @@ export default function HeladeraApp() {
   const toggleDieta = (item) =>
     setDieta((prev) => prev.includes(item) ? prev.filter((d) => d !== item) : [...prev, item]);
 
-  // PASO 1: Detectar ingredientes (no resta consulta)
   const detectarIngredientes = async () => {
-    if (!imageFile) return;
-    if (!puedeConsultar) return;
+    if (!imageFile || !puedeConsultar) return;
     setLoading(true); setLoadingMsg("Detectando ingredientes..."); setError(null);
     try {
       const base64 = await new Promise((res, rej) => {
@@ -520,10 +319,8 @@ export default function HeladeraApp() {
     }
   };
 
-  // PASO 2: Generar recetas con ingredientes editados (resta consulta)
   const generarRecetas = async () => {
-    if (!ingredientesEditados) return;
-    if (!puedeConsultar) return;
+    if (!ingredientesEditados || !puedeConsultar) return;
     setLoading(true); setLoadingMsg("Preparando tus recetas..."); setError(null);
     try {
       if (!isPremium) {
@@ -533,7 +330,7 @@ export default function HeladeraApp() {
           consultas_hoy: nuevasConsultas,
           ultima_consulta: today
         }).eq('id', user.id);
-        setProfile(p => ({...p, consultas_hoy: nuevasConsultas, ultima_consulta: today}));
+        setProfile(p => ({ ...p, consultas_hoy: nuevasConsultas, ultima_consulta: today }));
       }
       const resp = await fetch("/api/recetas", {
         method: "POST",
@@ -550,30 +347,38 @@ export default function HeladeraApp() {
     }
   };
 
-  const reset = () => { setImage(null); setImageFile(null); setResult(null); setError(null); setIngredientesDetectados(null); setIngredientesEditados(""); setInputKey(k => k + 1); };
+  const reset = () => {
+    setImage(null); setImageFile(null); setResult(null); setError(null);
+    setIngredientesDetectados(null); setIngredientesEditados("");
+    setInputKey(k => k + 1);
+  };
 
-  if (user === undefined) return <div style={{display:'flex',alignItems:'center',justifyContent:'center',minHeight:'100vh'}}><div style={{width:40,height:40,border:'3px solid #E2D9C8',borderTopColor:'#B85C2A',borderRadius:'50%',animation:'spin 0.8s linear infinite'}} /></div>;
-
-  if (!user) return (
-    <>
-      <style>{css}</style>
-      <AuthScreen onLogin={() => {}} />
-    </>
+  // Loading
+  if (!isLoaded) return (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
+      <div style={{ width: 40, height: 40, border: '3px solid #E2D9C8', borderTopColor: '#B85C2A', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+    </div>
   );
 
+  // Trial vencido
   if (profile && !isPremium && !trialActive) return (
     <>
       <style>{css}</style>
-      <div className="auth-wrap">
-        <div className="auth-logo-wrap"><img src="/logo.portal.png" alt="Que Cocino Today" /></div>
-        <div className="auth-card" style={{textAlign:'center'}}>
-          <div style={{fontSize:48, marginBottom:16}}>⏰</div>
-          <div className="auth-title">Tu período de prueba terminó</div>
-          <div className="auth-sub" style={{marginBottom:24}}>Activá tu Versión Premium y seguí cocinando con recetas ilimitadas</div>
-          <a href="https://recetas.quecocino.today/membresia" style={{display:'block',padding:'14px',background:'linear-gradient(135deg,#B85C2A,#D4884E)',color:'white',borderRadius:'12px',textDecoration:'none',fontWeight:600,fontSize:15,marginBottom:12}}>
+      <div className="auth-wrap" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+        <div style={{ marginBottom: 28, textAlign: 'center' }}>
+          <img src="/logo.portal.png" alt="Que Cocino Today" style={{ width: 220, maxWidth: '80%' }} />
+        </div>
+        <div style={{ background: '#FDFAF4', border: '1px solid #E2D9C8', borderRadius: 24, padding: 40, width: '100%', maxWidth: 420, boxShadow: '0 8px 40px rgba(30,26,20,0.13)', textAlign: 'center' }}>
+          <div style={{ fontSize: 48, marginBottom: 16 }}>⏰</div>
+          <div style={{ fontFamily: "'Lora', serif", fontSize: 26, fontWeight: 600, marginBottom: 8 }}>Tu período de prueba terminó</div>
+          <div style={{ fontSize: 14, color: '#7A7060', marginBottom: 24 }}>Activá tu Versión Premium y seguí cocinando con recetas ilimitadas</div>
+          <a href="https://recetas.quecocino.today/membresia"
+            style={{ display: 'block', padding: '14px', background: 'linear-gradient(135deg,#B85C2A,#D4884E)', color: 'white', borderRadius: '12px', textDecoration: 'none', fontWeight: 600, fontSize: 15, marginBottom: 12 }}>
             Activar Versión Premium 🚀
           </a>
-          <button onClick={logout} className="btn-reset" style={{margin:'8px auto 0'}}>Salir</button>
+          <button onClick={() => signOut()} style={{ background: 'none', border: '1.5px solid #E2D9C8', borderRadius: 12, padding: '10px 24px', fontSize: 14, color: '#7A7060', cursor: 'pointer', marginTop: 8 }}>
+            Salir
+          </button>
         </div>
       </div>
     </>
@@ -584,31 +389,31 @@ export default function HeladeraApp() {
       <style>{css}</style>
       <div className="page">
         <div className="topbar">
-          <div className="topbar-user">Hola, <span>{user.email}</span> 👋</div>
-          <button className="btn-logout" onClick={logout}>Salir</button>
+          <div className="topbar-user">Hola, <span>{user?.primaryEmailAddress?.emailAddress || user?.fullName}</span> 👋</div>
+          <button className="btn-logout" onClick={() => signOut()}>Salir</button>
         </div>
 
         {!isPremium && trialActive && (
-          <div style={{background:'var(--gold-bg)',border:'1px solid var(--gold-bd)',borderRadius:12,padding:'10px 16px',marginBottom:16,display:'flex',justifyContent:'space-between',alignItems:'center',flexWrap:'wrap',gap:8}}>
-            <span style={{fontSize:13,color:'var(--gold)',fontWeight:600}}>🔥 Consultas hoy: {consultasHoy}/2</span>
-            <span style={{fontSize:13,color:'var(--gold)'}}>⏳ {diasRestantes} días de prueba restantes</span>
-            <a href="https://recetas.quecocino.today/membresia" style={{fontSize:12,color:'var(--accent)',fontWeight:600,textDecoration:'underline'}}>Activar Versión Premium →</a>
+          <div style={{ background: 'var(--gold-bg)', border: '1px solid var(--gold-bd)', borderRadius: 12, padding: '10px 16px', marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+            <span style={{ fontSize: 13, color: 'var(--gold)', fontWeight: 600 }}>🔥 Consultas hoy: {consultasHoy}/2</span>
+            <span style={{ fontSize: 13, color: 'var(--gold)' }}>⏳ {diasRestantes} días de prueba restantes</span>
+            <a href="https://recetas.quecocino.today/membresia" style={{ fontSize: 12, color: 'var(--accent)', fontWeight: 600, textDecoration: 'underline' }}>Activar Versión Premium →</a>
           </div>
         )}
 
         {!isPremium && trialActive && consultasHoy >= 2 && (
-          <div style={{background:'#FEF2F2',border:'1px solid #FECACA',borderRadius:12,padding:'16px 20px',marginBottom:16,textAlign:'center'}}>
-            <div style={{fontSize:13,color:'#DC2626',fontWeight:600,marginBottom:8}}>Usaste tus 2 consultas de hoy 😅</div>
-            <div style={{fontSize:13,color:'#DC2626',marginBottom:12}}>Volvé mañana o activá tu Versión Premium para consultas ilimitadas</div>
-            <a href="https://recetas.quecocino.today/membresia" style={{display:'inline-block',padding:'10px 20px',background:'linear-gradient(135deg,#B85C2A,#D4884E)',color:'white',borderRadius:'10px',textDecoration:'none',fontWeight:600,fontSize:13}}>
+          <div style={{ background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: 12, padding: '16px 20px', marginBottom: 16, textAlign: 'center' }}>
+            <div style={{ fontSize: 13, color: '#DC2626', fontWeight: 600, marginBottom: 8 }}>Usaste tus 2 consultas de hoy 😅</div>
+            <div style={{ fontSize: 13, color: '#DC2626', marginBottom: 12 }}>Volvé mañana o activá tu Versión Premium para consultas ilimitadas</div>
+            <a href="https://recetas.quecocino.today/membresia" style={{ display: 'inline-block', padding: '10px 20px', background: 'linear-gradient(135deg,#B85C2A,#D4884E)', color: 'white', borderRadius: '10px', textDecoration: 'none', fontWeight: 600, fontSize: 13 }}>
               Activar Versión Premium 🚀
             </a>
           </div>
         )}
 
         <div className="header">
-          <div style={{marginBottom: 20, textAlign: 'center'}}>
-            <img src="/logo.portal.png" alt="Que Cocino Today" style={{width: 300, maxWidth: '90%'}} />
+          <div style={{ marginBottom: 20, textAlign: 'center' }}>
+            <img src="/logo.portal.png" alt="Que Cocino Today" style={{ width: 300, maxWidth: '90%' }} />
           </div>
           <div className="header-tag">✦ Cocina simple, fácil, rápido y delicioso</div>
           <h1>Mostrame lo que tenés y te digo qué cocinar <em>AHORA</em></h1>
@@ -703,7 +508,6 @@ export default function HeladeraApp() {
           </div>
         )}
 
-        {/* PASO DE EDICION DE INGREDIENTES */}
         {!loading && ingredientesDetectados && !result && (
           <div className="card">
             <div className="card-title">🔍 Ingredientes detectados — revisá y corregí si hace falta</div>
@@ -711,9 +515,9 @@ export default function HeladeraApp() {
               value={ingredientesEditados}
               onChange={e => setIngredientesEditados(e.target.value)}
               rows={4}
-              style={{width:'100%', padding:'12px 14px', border:'1.5px solid var(--border)', borderRadius:10, fontSize:14, fontFamily:'Outfit, sans-serif', color:'var(--text)', background:'var(--bg)', boxSizing:'border-box', resize:'vertical', lineHeight:1.6}}
+              style={{ width: '100%', padding: '12px 14px', border: '1.5px solid var(--border)', borderRadius: 10, fontSize: 14, fontFamily: 'Outfit, sans-serif', color: 'var(--text)', background: 'var(--bg)', boxSizing: 'border-box', resize: 'vertical', lineHeight: 1.6 }}
             />
-            <p style={{fontSize:12, color:'var(--muted)', marginTop:8, marginBottom:20}}>
+            <p style={{ fontSize: 12, color: 'var(--muted)', marginTop: 8, marginBottom: 20 }}>
               ✏️ Podés corregir ingredientes mal detectados o agregar los que falten.
             </p>
             <button className="btn-analyze" onClick={generarRecetas} disabled={loading || !puedeConsultar}>
@@ -724,12 +528,6 @@ export default function HeladeraApp() {
 
         {result && (
           <div>
-            {result.ingredientesDetectados && (
-              <div className="detected-box">
-                <div className="detected-label">🔍 Ingredientes detectados</div>
-                <div className="detected-text">{result.ingredientesDetectados}</div>
-              </div>
-            )}
             <div className="results-title">Tus 3 recetas de hoy</div>
             {result.recetas?.map((r, i) => (
               <div key={i} className="recipe-card">
@@ -749,9 +547,9 @@ export default function HeladeraApp() {
                   </ul>
                   {r.beneficios?.length > 0 && (
                     <>
-                      <div className="section-label" style={{color:'var(--green)'}}>✨ Beneficios</div>
-                      <div style={{display:'flex',flexWrap:'wrap',gap:8,marginBottom:24}}>
-                        {r.beneficios.map((b,j) => <span key={j} style={{background:'var(--green-bg)',border:'1px solid var(--green-bd)',color:'var(--green)',padding:'4px 12px',borderRadius:20,fontSize:13}}>{b}</span>)}
+                      <div className="section-label" style={{ color: 'var(--green)' }}>✨ Beneficios</div>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 24 }}>
+                        {r.beneficios.map((b, j) => <span key={j} style={{ background: 'var(--green-bg)', border: '1px solid var(--green-bd)', color: 'var(--green)', padding: '4px 12px', borderRadius: 20, fontSize: 13 }}>{b}</span>)}
                       </div>
                     </>
                   )}
@@ -772,10 +570,9 @@ export default function HeladeraApp() {
         )}
 
         {isPremium && (
-          <div style={{textAlign:'center', marginTop:48, paddingBottom:16}}>
-            <a href="https://wa.link/6qd97a"
-              target="_blank"
-              style={{fontSize:12, color:'var(--muted)', textDecoration:'underline'}}>
+          <div style={{ textAlign: 'center', marginTop: 48, paddingBottom: 16 }}>
+            <a href="https://wa.link/6qd97a" target="_blank"
+              style={{ fontSize: 12, color: 'var(--muted)', textDecoration: 'underline' }}>
               Cancelar Versión Premium
             </a>
           </div>
