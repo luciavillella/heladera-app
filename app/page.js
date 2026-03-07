@@ -302,7 +302,11 @@ export default function HeladeraApp() {
     await fetch('/api/crear-perfil', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId }),
+      body: JSON.stringify({ 
+        userId,
+        email: user?.primaryEmailAddress?.emailAddress || "",
+        nombre: user?.fullName || "",
+      }),
     });
     const { data } = await supabase.from('user_profiles').select('*').eq('id', userId).single();
     setProfile(data);
