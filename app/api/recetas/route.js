@@ -70,10 +70,11 @@ Respondé SOLO con este JSON, sin texto extra, sin markdown, sin emojis en los t
 
     return Response.json({ error: "Modo no válido" }, { status: 400 });
 
- } catch (error) {
+  } catch (error) {
     console.error("Error:", error);
-    const mensaje = error.message?.includes('overloaded') 
+    const mensaje = error.message?.includes('overloaded')
       ? "Estamos con mucha demanda en este momento, intentá de nuevo en unos segundos 🙏"
       : "Algo salió mal: " + error.message;
     return Response.json({ error: mensaje }, { status: 500 });
   }
+}
