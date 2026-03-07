@@ -38,6 +38,12 @@ export async function POST(request) {
       });
 
       const data = await response.json();
+      console.log("GROQ detectar response:", JSON.stringify(data));
+
+      if (!response.ok) {
+        return Response.json({ error: data.error?.message || "Error de Groq" }, { status: 500 });
+      }
+
       const ingredientes = data.choices?.[0]?.message?.content?.trim() || "";
       return Response.json({ ingredientesDetectados: ingredientes });
     }
@@ -75,6 +81,12 @@ Respondé SOLO con este JSON, sin texto extra, sin markdown, sin emojis en los t
       });
 
       const data = await response.json();
+      console.log("GROQ recetas response:", JSON.stringify(data).slice(0, 500));
+
+      if (!response.ok) {
+        return Response.json({ error: data.error?.message || "Error de Groq" }, { status: 500 });
+      }
+
       const text = data.choices?.[0]?.message?.content || "";
       const cleaned = text.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
       const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
