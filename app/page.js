@@ -406,13 +406,13 @@ export default function HeladeraApp() {
     setLoading(true); setLoadingMsg("Preparando tus recetas..."); setError(null);
     try {
       if (!isPremium) {
-        const today = new Date().toISOString().split('T')[0];
-        const nuevasConsultas = profile?.ultima_consulta === today ? consultasHoy + 1 : 1;
-        await supabase.from('user_profiles').update({
-          consultas_hoy: nuevasConsultas,
-          ultima_consulta: today
-        }).eq('id', user.id);
-        setProfile(p => ({ ...p, consultas_hoy: nuevasConsultas, ultima_consulta: today }));
+        const res = await fetch('/api/actualizar-consultas', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId: user.id }),
+        });
+        const data = await res.json();
+        setProfile(p => ({ ...p, consultas_hoy: data.consultas_hoy, ultima_consulta: new Date().toISOString().split('T')[0] }));
       }
       const resp = await fetch("/api/recetas", {
         method: "POST",
