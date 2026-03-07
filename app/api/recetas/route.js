@@ -71,7 +71,7 @@ Respondé ÚNICAMENTE con los nombres de los alimentos separados por comas, en e
       const prompt = `Sos un chef latinoamericano creativo con años de experiencia en cocina casera y de autor. Tu especialidad es transformar ingredientes simples en platos sorprendentes, sabrosos y originales inspirados en la cocina de Argentina, México, Perú, Colombia y el resto de Latinoamérica.
 
 Ingredientes disponibles: ${ingredientesEditados}
-Solo podés usar además: sal, pimienta negra y aceite.
+REGLA ABSOLUTA: Solo podés usar los ingredientes de esa lista. No podés agregar ningún otro ingrediente que no esté en la lista. Los únicos extras permitidos son sal, pimienta negra y aceite. Si una receta requiere algo que no está en la lista, no la hagas.
 Tiempo disponible: ${tiempoIndicado}${prefText}
 
 Tu tarea es crear exactamente 3 recetas que cumplan con estas reglas:
