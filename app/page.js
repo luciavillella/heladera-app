@@ -25,6 +25,7 @@ const css = `
     --gold:      #C9973A;
     --gold-bg:   #FBF3E2;
     --gold-bd:   #E8D4A0;
+    --pink:      #e05c8a;
     --shadow:    0 2px 12px rgba(30,26,20,0.08);
     --shadow-lg: 0 8px 40px rgba(30,26,20,0.13);
   }
@@ -160,13 +161,6 @@ const css = `
     display: flex; align-items: flex-start; gap: 10px;
   }
 
-  .detected-box {
-    background: var(--gold-bg); border: 1px solid var(--gold-bd);
-    border-radius: 14px; padding: 16px 20px; margin-bottom: 28px;
-  }
-  .detected-label { font-size: 11px; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; color: var(--gold); margin-bottom: 6px; }
-  .detected-text { font-size: 14px; color: var(--text); line-height: 1.5; }
-
   .results-title {
     font-family: 'Lora', serif; font-size: 26px; font-weight: 600;
     margin-bottom: 24px; color: var(--text);
@@ -219,6 +213,36 @@ const css = `
   }
   .btn-reset:hover { border-color: var(--accent); color: var(--accent); }
 
+  /* TABS */
+  .tabs {
+    display: flex; gap: 0; margin-bottom: 28px;
+    border: 1.5px solid var(--border); border-radius: 14px; overflow: hidden;
+  }
+  .tab-btn {
+    flex: 1; padding: 12px; font-family: 'Outfit', sans-serif;
+    font-size: 14px; font-weight: 500; cursor: pointer;
+    background: none; border: none; color: var(--muted); transition: all 0.2s;
+  }
+  .tab-btn.active { background: var(--accent); color: white; font-weight: 600; }
+
+  /* FAVORITOS */
+  .btn-fav {
+    display: flex; align-items: center; gap: 8px;
+    margin-top: 16px; padding: 10px 20px;
+    background: none; border: 1.5px solid var(--border);
+    border-radius: 10px; font-family: 'Outfit', sans-serif;
+    font-size: 14px; font-weight: 500; color: var(--muted);
+    cursor: pointer; transition: all 0.2s;
+  }
+  .btn-fav:hover { border-color: var(--pink); color: var(--pink); }
+  .btn-fav.saved { border-color: var(--pink); color: var(--pink); background: rgba(224,92,138,0.06); }
+
+  .empty-favs {
+    text-align: center; padding: 48px 24px;
+    color: var(--muted); font-size: 15px;
+  }
+  .empty-favs .emoji { font-size: 48px; margin-bottom: 16px; }
+
   /* TOP BAR */
   .topbar {
     display: flex; align-items: center; justify-content: space-between;
@@ -247,6 +271,7 @@ export default function HeladeraApp() {
   const { user, isLoaded } = useUser();
   const { signOut } = useClerk();
   const [profile, setProfile] = useState(null);
+  const [activeTab, setActiveTab] = useState("recetas");
   const [image, setImage] = useState(null);
   const [imageFile, setImageFile] = useState(null);
   const [dragOver, setDragOver] = useState(false);
@@ -260,12 +285,17 @@ export default function HeladeraApp() {
   const [personas, setPersonas] = useState("");
   const [tiempo, setTiempo] = useState("");
   const [dieta, setDieta] = useState([]);
+  const [favoritos, setFavoritos] = useState([]);
+  const [savedIds, setSavedIds] = useState({});
   const fileRef = useRef();
   const [inputKey, setInputKey] = useState(0);
   const supabase = createClient();
 
   useEffect(() => {
-    if (user) loadProfile(user.id);
+    if (user) {
+      loadProfile(user.id);
+      loadFavoritos(user.id);
+    }
   }, [user]);
 
   const loadProfile = async (userId) => {
@@ -276,6 +306,47 @@ export default function HeladeraApp() {
     });
     const { data } = await supabase.from('user_profiles').select('*').eq('id', userId).single();
     setProfile(data);
+  };
+
+  const loadFavoritos = async (userId) => {
+    const { data } = await supabase
+      .from('favoritos')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+    if (data) {
+      setFavoritos(data);
+      const ids = {};
+      data.forEach(f => { ids[f.nombre] = f.id; });
+      setSavedIds(ids);
+    }
+  };
+
+  const toggleFavorito = async (receta) => {
+    if (!user) return;
+    if (savedIds[receta.nombre]) {
+      // Eliminar de favoritos
+      await supabase.from('favoritos').delete().eq('id', savedIds[receta.nombre]);
+      setSavedIds(prev => { const n = {...prev}; delete n[receta.nombre]; return n; });
+      setFavoritos(prev => prev.filter(f => f.nombre !== receta.nombre));
+    } else {
+      // Agregar a favoritos
+      const { data } = await supabase.from('favoritos').insert({
+        user_id: user.id,
+        nombre: receta.nombre,
+        emoji: receta.emoji,
+        tiempo: receta.tiempo,
+        dificultad: receta.dificultad,
+        porciones: receta.porciones,
+        ingredientes: receta.ingredientes,
+        pasos: receta.pasos,
+        beneficios: receta.beneficios,
+      }).select().single();
+      if (data) {
+        setSavedIds(prev => ({ ...prev, [receta.nombre]: data.id }));
+        setFavoritos(prev => [data, ...prev]);
+      }
+    }
   };
 
   const isPremium = profile?.is_premium;
@@ -358,18 +429,61 @@ export default function HeladeraApp() {
     setInputKey(k => k + 1);
   };
 
-  // Loading
+  const RecetaCard = ({ r, showFav = true }) => (
+    <div className="recipe-card">
+      <div className="recipe-header">
+        <div className="recipe-emoji">{r.emoji}</div>
+        <div className="recipe-name">{r.nombre}</div>
+        <div className="recipe-meta">
+          <span className="meta-tag">⏱ {r.tiempo}</span>
+          <span className="meta-tag">📊 {r.dificultad}</span>
+          <span className="meta-tag">👥 {r.porciones}</span>
+        </div>
+      </div>
+      <div className="recipe-body">
+        <div className="section-label">Ingredientes</div>
+        <ul className="ingredientes-list">
+          {(r.ingredientes || []).map((ing, j) => <li key={j}>{ing}</li>)}
+        </ul>
+        {(r.beneficios?.length > 0) && (
+          <>
+            <div className="section-label" style={{ color: 'var(--green)' }}>✨ Beneficios</div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 24 }}>
+              {r.beneficios.map((b, j) => <span key={j} style={{ background: 'var(--green-bg)', border: '1px solid var(--green-bd)', color: 'var(--green)', padding: '4px 12px', borderRadius: 20, fontSize: 13 }}>{b}</span>)}
+            </div>
+          </>
+        )}
+        <div className="section-label">Preparación</div>
+        <ol className="pasos-list">
+          {(r.pasos || []).map((paso, j) => (
+            <li key={j} className="paso-item">
+              <span className="paso-num">{j + 1}</span>
+              <span className="paso-text">{paso}</span>
+            </li>
+          ))}
+        </ol>
+        {showFav && (
+          <button
+            className={`btn-fav ${savedIds[r.nombre] ? 'saved' : ''}`}
+            onClick={() => toggleFavorito(r)}
+          >
+            {savedIds[r.nombre] ? '❤️ Guardada' : '🤍 Guardar receta'}
+          </button>
+        )}
+      </div>
+    </div>
+  );
+
   if (!isLoaded) return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
       <div style={{ width: 40, height: 40, border: '3px solid #E2D9C8', borderTopColor: '#B85C2A', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
     </div>
   );
 
-  // Trial vencido
   if (profile && !isPremium && !trialActive) return (
     <>
       <style>{css}</style>
-      <div className="auth-wrap" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+      <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
         <div style={{ marginBottom: 28, textAlign: 'center' }}>
           <img src="/logo.portal.png" alt="Que Cocino Today" style={{ width: 220, maxWidth: '80%' }} />
         </div>
@@ -425,153 +539,151 @@ export default function HeladeraApp() {
           <p>Sacá una foto a tus ingredientes, elegí tus preferencias y te sugerimos 3 recetas perfectas según lo que tenés.</p>
         </div>
 
-        {!result && !loading && !ingredientesDetectados && (
-          <>
-            <div className="card">
-              <div className="card-title">📷 Fotografiá tus ingredientes disponibles</div>
-              {!image ? (
-                <div
-                  className={`upload-zone ${dragOver ? "drag" : ""}`}
-                  onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
-                  onDragLeave={() => setDragOver(false)}
-                  onDrop={(e) => { e.preventDefault(); setDragOver(false); handleFile(e.dataTransfer.files[0]); }}
-                  onClick={() => fileRef.current?.click()}
-                >
-                  <input key={inputKey} ref={fileRef} type="file" accept="image/*" capture="environment"
-                    onChange={(e) => { if (e.target.files?.[0]) handleFile(e.target.files[0]); }}
-                    style={{ display: 'none' }} />
-                  <div className="upload-icon-wrap">📷</div>
-                  <div className="upload-title">Fotografiá o subí la foto de tus ingredientes</div>
-                  <div className="upload-sub">Desde la heladera, alacena o donde los tengas</div>
-                  <div className="upload-formats">JPG · PNG · HEIC · WEBP</div>
-                </div>
-              ) : (
-                <div className="preview-wrap">
-                  <img src={image} alt="Ingredientes" />
-                  <div className="preview-bar">
-                    <span className="preview-label">✅ Foto cargada</span>
-                    <button className="btn-change" onClick={reset}>Cambiar</button>
-                  </div>
-                </div>
-              )}
-            </div>
+        {/* TABS */}
+        <div className="tabs">
+          <button className={`tab-btn ${activeTab === 'recetas' ? 'active' : ''}`} onClick={() => { setActiveTab('recetas'); reset(); }}>
+            🍳 Generar recetas
+          </button>
+          <button className={`tab-btn ${activeTab === 'favoritos' ? 'active' : ''}`} onClick={() => setActiveTab('favoritos')}>
+            ❤️ Mis favoritas {favoritos.length > 0 && `(${favoritos.length})`}
+          </button>
+        </div>
 
-            <div className="card">
-              <div className="card-title">⚙️ Seleccioná tus preferencias</div>
-              <div className="prefs-grid">
-                <div className="pref-group">
-                  <label>🍽️ Tipo de comida</label>
-                  <select value={tipoComida} onChange={(e) => setTipoComida(e.target.value)}>
-                    <option value="">Cualquiera</option>
-                    {TIPOS_COMIDA.map((t) => <option key={t} value={t}>{t}</option>)}
-                  </select>
-                </div>
-                <div className="pref-group">
-                  <label>👥 Cantidad de personas</label>
-                  <select value={personas} onChange={(e) => setPersonas(e.target.value)}>
-                    <option value="">Sin especificar</option>
-                    {PERSONAS_OPT.map((p) => <option key={p} value={p}>{p}</option>)}
-                  </select>
-                </div>
-                <div className="pref-group" style={{ gridColumn: "1 / -1" }}>
-                  <label>⏱️ Tiempo disponible</label>
-                  <select value={tiempo} onChange={(e) => setTiempo(e.target.value)}>
-                    <option value="">Sin preferencia</option>
-                    {TIEMPO_OPT.map((t) => <option key={t} value={t}>{t}</option>)}
-                  </select>
-                </div>
-                <div className="pref-group full">
-                  <label>🥗 Preferencias dietarias (opcional)</label>
-                  <div className="dieta-options">
-                    {DIETA_OPT.map((d) => (
-                      <label key={d} className={`dieta-chip ${dieta.includes(d) ? "active" : ""}`}
-                        onClick={(e) => { e.preventDefault(); toggleDieta(d); }}>
-                        <input type="checkbox" checked={dieta.includes(d)} readOnly />
-                        {d}
-                      </label>
-                    ))}
-                  </div>
-                </div>
+        {/* TAB FAVORITOS */}
+        {activeTab === 'favoritos' && (
+          <div>
+            {favoritos.length === 0 ? (
+              <div className="empty-favs">
+                <div className="emoji">🤍</div>
+                <p>Todavía no guardaste ninguna receta.</p>
+                <p style={{ fontSize: 13, marginTop: 8 }}>Generá recetas y tocá "Guardar receta" para verlas acá.</p>
               </div>
-            </div>
+            ) : (
+              <>
+                <div className="results-title">Mis recetas favoritas</div>
+                {favoritos.map((r, i) => <RecetaCard key={i} r={r} showFav={true} />)}
+              </>
+            )}
+          </div>
+        )}
 
-            {image && !ingredientesDetectados && (
-              <button className="btn-analyze" onClick={detectarIngredientes} disabled={loading || !puedeConsultar}>
-                ✨ &nbsp; {!puedeConsultar ? "Límite diario alcanzado" : "Analizar ingredientes"}
-              </button>
+        {/* TAB RECETAS */}
+        {activeTab === 'recetas' && (
+          <>
+            {!result && !loading && !ingredientesDetectados && (
+              <>
+                <div className="card">
+                  <div className="card-title">📷 Fotografiá tus ingredientes disponibles</div>
+                  {!image ? (
+                    <div
+                      className={`upload-zone ${dragOver ? "drag" : ""}`}
+                      onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+                      onDragLeave={() => setDragOver(false)}
+                      onDrop={(e) => { e.preventDefault(); setDragOver(false); handleFile(e.dataTransfer.files[0]); }}
+                      onClick={() => fileRef.current?.click()}
+                    >
+                      <input key={inputKey} ref={fileRef} type="file" accept="image/*" capture="environment"
+                        onChange={(e) => { if (e.target.files?.[0]) handleFile(e.target.files[0]); }}
+                        style={{ display: 'none' }} />
+                      <div className="upload-icon-wrap">📷</div>
+                      <div className="upload-title">Fotografiá o subí la foto de tus ingredientes</div>
+                      <div className="upload-sub">Desde la heladera, alacena o donde los tengas</div>
+                      <div className="upload-formats">JPG · PNG · HEIC · WEBP</div>
+                    </div>
+                  ) : (
+                    <div className="preview-wrap">
+                      <img src={image} alt="Ingredientes" />
+                      <div className="preview-bar">
+                        <span className="preview-label">✅ Foto cargada</span>
+                        <button className="btn-change" onClick={reset}>Cambiar</button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="card">
+                  <div className="card-title">⚙️ Seleccioná tus preferencias</div>
+                  <div className="prefs-grid">
+                    <div className="pref-group">
+                      <label>🍽️ Tipo de comida</label>
+                      <select value={tipoComida} onChange={(e) => setTipoComida(e.target.value)}>
+                        <option value="">Cualquiera</option>
+                        {TIPOS_COMIDA.map((t) => <option key={t} value={t}>{t}</option>)}
+                      </select>
+                    </div>
+                    <div className="pref-group">
+                      <label>👥 Cantidad de personas</label>
+                      <select value={personas} onChange={(e) => setPersonas(e.target.value)}>
+                        <option value="">Sin especificar</option>
+                        {PERSONAS_OPT.map((p) => <option key={p} value={p}>{p}</option>)}
+                      </select>
+                    </div>
+                    <div className="pref-group" style={{ gridColumn: "1 / -1" }}>
+                      <label>⏱️ Tiempo disponible</label>
+                      <select value={tiempo} onChange={(e) => setTiempo(e.target.value)}>
+                        <option value="">Sin preferencia</option>
+                        {TIEMPO_OPT.map((t) => <option key={t} value={t}>{t}</option>)}
+                      </select>
+                    </div>
+                    <div className="pref-group full">
+                      <label>🥗 Preferencias dietarias (opcional)</label>
+                      <div className="dieta-options">
+                        {DIETA_OPT.map((d) => (
+                          <label key={d} className={`dieta-chip ${dieta.includes(d) ? "active" : ""}`}
+                            onClick={(e) => { e.preventDefault(); toggleDieta(d); }}>
+                            <input type="checkbox" checked={dieta.includes(d)} readOnly />
+                            {d}
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {image && !ingredientesDetectados && (
+                  <button className="btn-analyze" onClick={detectarIngredientes} disabled={loading || !puedeConsultar}>
+                    ✨ &nbsp; {!puedeConsultar ? "Límite diario alcanzado" : "Analizar ingredientes"}
+                  </button>
+                )}
+
+                {error && <div className="error-box" style={{ marginTop: 16 }}>⚠️ {error}</div>}
+              </>
             )}
 
-            {error && <div className="error-box" style={{ marginTop: 16 }}>⚠️ {error}</div>}
-          </>
-        )}
-
-        {loading && (
-          <div className="card loading-wrap">
-            <div className="loading-spinner" />
-            <div className="loading-title">{loadingMsg}</div>
-            <div className="loading-sub">Un momento...</div>
-          </div>
-        )}
-
-        {!loading && ingredientesDetectados && !result && (
-          <div className="card">
-            <div className="card-title">🔍 Ingredientes detectados — revisá y corregí si hace falta</div>
-            <textarea
-              value={ingredientesEditados}
-              onChange={e => setIngredientesEditados(e.target.value)}
-              rows={4}
-              style={{ width: '100%', padding: '12px 14px', border: '1.5px solid var(--border)', borderRadius: 10, fontSize: 14, fontFamily: 'Outfit, sans-serif', color: 'var(--text)', background: 'var(--bg)', boxSizing: 'border-box', resize: 'vertical', lineHeight: 1.6 }}
-            />
-            <p style={{ fontSize: 12, color: 'var(--muted)', marginTop: 8, marginBottom: 20 }}>
-              ✏️ Podés corregir ingredientes mal detectados o agregar los que falten.
-            </p>
-            <button className="btn-analyze" onClick={generarRecetas} disabled={loading || !puedeConsultar}>
-              ✨ &nbsp; {!puedeConsultar ? "Límite diario alcanzado" : "Mostrar mis 3 recetas"}
-            </button>
-          </div>
-        )}
-
-        {result && (
-          <div>
-            <div className="results-title">Tus 3 recetas de hoy</div>
-            {result.recetas?.map((r, i) => (
-              <div key={i} className="recipe-card">
-                <div className="recipe-header">
-                  <div className="recipe-emoji">{r.emoji}</div>
-                  <div className="recipe-name">{r.nombre}</div>
-                  <div className="recipe-meta">
-                    <span className="meta-tag">⏱ {r.tiempo}</span>
-                    <span className="meta-tag">📊 {r.dificultad}</span>
-                    <span className="meta-tag">👥 {r.porciones}</span>
-                  </div>
-                </div>
-                <div className="recipe-body">
-                  <div className="section-label">Ingredientes</div>
-                  <ul className="ingredientes-list">
-                    {r.ingredientes?.map((ing, j) => <li key={j}>{ing}</li>)}
-                  </ul>
-                  {r.beneficios?.length > 0 && (
-                    <>
-                      <div className="section-label" style={{ color: 'var(--green)' }}>✨ Beneficios</div>
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 24 }}>
-                        {r.beneficios.map((b, j) => <span key={j} style={{ background: 'var(--green-bg)', border: '1px solid var(--green-bd)', color: 'var(--green)', padding: '4px 12px', borderRadius: 20, fontSize: 13 }}>{b}</span>)}
-                      </div>
-                    </>
-                  )}
-                  <div className="section-label">Preparación</div>
-                  <ol className="pasos-list">
-                    {r.pasos?.map((paso, j) => (
-                      <li key={j} className="paso-item">
-                        <span className="paso-num">{j + 1}</span>
-                        <span className="paso-text">{paso}</span>
-                      </li>
-                    ))}
-                  </ol>
-                </div>
+            {loading && (
+              <div className="card loading-wrap">
+                <div className="loading-spinner" />
+                <div className="loading-title">{loadingMsg}</div>
+                <div className="loading-sub">Un momento...</div>
               </div>
-            ))}
-            <button className="btn-reset" onClick={reset}>← Hacer otra consulta</button>
-          </div>
+            )}
+
+            {!loading && ingredientesDetectados && !result && (
+              <div className="card">
+                <div className="card-title">🔍 Ingredientes detectados — revisá y corregí si hace falta</div>
+                <textarea
+                  value={ingredientesEditados}
+                  onChange={e => setIngredientesEditados(e.target.value)}
+                  rows={4}
+                  style={{ width: '100%', padding: '12px 14px', border: '1.5px solid var(--border)', borderRadius: 10, fontSize: 14, fontFamily: 'Outfit, sans-serif', color: 'var(--text)', background: 'var(--bg)', boxSizing: 'border-box', resize: 'vertical', lineHeight: 1.6 }}
+                />
+                <p style={{ fontSize: 12, color: 'var(--muted)', marginTop: 8, marginBottom: 20 }}>
+                  ✏️ Podés corregir ingredientes mal detectados o agregar los que falten.
+                </p>
+                <button className="btn-analyze" onClick={generarRecetas} disabled={loading || !puedeConsultar}>
+                  ✨ &nbsp; {!puedeConsultar ? "Límite diario alcanzado" : "Mostrar mis 3 recetas"}
+                </button>
+              </div>
+            )}
+
+            {result && (
+              <div>
+                <div className="results-title">Tus 3 recetas de hoy</div>
+                {result.recetas?.map((r, i) => <RecetaCard key={i} r={r} showFav={true} />)}
+                <button className="btn-reset" onClick={reset}>← Hacer otra consulta</button>
+              </div>
+            )}
+          </>
         )}
 
         {isPremium && (
