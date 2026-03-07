@@ -7,8 +7,8 @@ const supabaseAdmin = createClient(
 
 export async function POST(request) {
   try {
-    const { userId } = await request.json();
-    console.log('userId recibido:', userId);
+    const { userId, email, nombre } = await request.json();
+    console.log('userId recibido:', userId, 'email:', email);
 
     if (!userId) {
       return Response.json({ error: 'userId requerido' }, { status: 400 });
@@ -22,6 +22,11 @@ export async function POST(request) {
       .single();
 
     if (existing) {
+      // Actualizar email y nombre si ya existe
+      await supabaseAdmin
+        .from('user_profiles')
+        .update({ email, nombre })
+        .eq('id', userId);
       return Response.json({ ok: true, created: false });
     }
 
@@ -33,6 +38,8 @@ export async function POST(request) {
       .from('user_profiles')
       .insert({
         id: userId,
+        email,
+        nombre,
         is_premium: false,
         trial_ends_at: trialEnd.toISOString(),
         consultas_hoy: 0,
