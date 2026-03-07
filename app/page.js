@@ -1,7 +1,6 @@
 "use client";
 import { useState, useCallback, useRef, useEffect } from "react";
 import { useUser, useClerk } from "@clerk/nextjs";
-import { useSupabaseClient } from "./lib/supabase";
 
 const TIPOS_COMIDA = ["Desayuno", "Almuerzo", "Merienda", "Cena", "Colación", "Postre", "Smoothie"];
 const PERSONAS_OPT = ["1 persona", "2 personas", "3-4 personas", "5+ personas"];
@@ -213,7 +212,6 @@ const css = `
   }
   .btn-reset:hover { border-color: var(--accent); color: var(--accent); }
 
-  /* TABS */
   .tabs {
     display: flex; gap: 0; margin-bottom: 28px;
     border: 1.5px solid var(--border); border-radius: 14px; overflow: hidden;
@@ -225,7 +223,6 @@ const css = `
   }
   .tab-btn.active { background: var(--accent); color: white; font-weight: 600; }
 
-  /* FAVORITOS */
   .btn-fav {
     display: flex; align-items: center; gap: 8px;
     margin-top: 16px; padding: 10px 20px;
@@ -243,7 +240,6 @@ const css = `
   }
   .empty-favs .emoji { font-size: 48px; margin-bottom: 16px; }
 
-  /* TOP BAR */
   .topbar {
     display: flex; align-items: center; justify-content: space-between;
     margin-bottom: 32px; padding: 12px 16px;
@@ -289,7 +285,6 @@ export default function HeladeraApp() {
   const [savedIds, setSavedIds] = useState({});
   const fileRef = useRef();
   const [inputKey, setInputKey] = useState(0);
-  const supabase = useSupabaseClient();
 
   useEffect(() => {
     if (user) {
@@ -309,21 +304,20 @@ export default function HeladeraApp() {
       }),
     });
     const data = await res.json();
-    if (data.profile) {
-      setProfile(data.profile);
-    }
+    if (data.profile) setProfile(data.profile);
   };
 
   const loadFavoritos = async (userId) => {
-    const { data } = await supabase
-      .from('favoritos')
-      .select('*')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false });
-    if (data) {
-      setFavoritos(data);
+    const res = await fetch('/api/favoritos', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ accion: 'cargar', userId }),
+    });
+    const data = await res.json();
+    if (data.favoritos) {
+      setFavoritos(data.favoritos);
       const ids = {};
-      data.forEach(f => { ids[f.nombre] = f.id; });
+      data.favoritos.forEach(f => { ids[f.nombre] = f.id; });
       setSavedIds(ids);
     }
   };
@@ -331,26 +325,23 @@ export default function HeladeraApp() {
   const toggleFavorito = async (receta) => {
     if (!user) return;
     if (savedIds[receta.nombre]) {
-      // Eliminar de favoritos
-      await supabase.from('favoritos').delete().eq('id', savedIds[receta.nombre]);
+      await fetch('/api/favoritos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ accion: 'eliminar', userId: user.id, favoritoId: savedIds[receta.nombre] }),
+      });
       setSavedIds(prev => { const n = {...prev}; delete n[receta.nombre]; return n; });
       setFavoritos(prev => prev.filter(f => f.nombre !== receta.nombre));
     } else {
-      // Agregar a favoritos
-      const { data } = await supabase.from('favoritos').insert({
-        user_id: user.id,
-        nombre: receta.nombre,
-        emoji: receta.emoji,
-        tiempo: receta.tiempo,
-        dificultad: receta.dificultad,
-        porciones: receta.porciones,
-        ingredientes: receta.ingredientes,
-        pasos: receta.pasos,
-        beneficios: receta.beneficios,
-      }).select().single();
-      if (data) {
-        setSavedIds(prev => ({ ...prev, [receta.nombre]: data.id }));
-        setFavoritos(prev => [data, ...prev]);
+      const res = await fetch('/api/favoritos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ accion: 'agregar', userId: user.id, receta }),
+      });
+      const data = await res.json();
+      if (data.favorito) {
+        setSavedIds(prev => ({ ...prev, [receta.nombre]: data.favorito.id }));
+        setFavoritos(prev => [data.favorito, ...prev]);
       }
     }
   };
@@ -545,7 +536,6 @@ export default function HeladeraApp() {
           <p>Sacá una foto a tus ingredientes, elegí tus preferencias y te sugerimos 3 recetas perfectas según lo que tenés.</p>
         </div>
 
-        {/* TABS */}
         <div className="tabs">
           <button className={`tab-btn ${activeTab === 'recetas' ? 'active' : ''}`} onClick={() => { setActiveTab('recetas'); reset(); }}>
             🍳 Generar recetas
@@ -555,7 +545,6 @@ export default function HeladeraApp() {
           </button>
         </div>
 
-        {/* TAB FAVORITOS */}
         {activeTab === 'favoritos' && (
           <div>
             {favoritos.length === 0 ? (
@@ -573,7 +562,6 @@ export default function HeladeraApp() {
           </div>
         )}
 
-        {/* TAB RECETAS */}
         {activeTab === 'recetas' && (
           <>
             {!result && !loading && !ingredientesDetectados && (
