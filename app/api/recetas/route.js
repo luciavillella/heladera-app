@@ -1,6 +1,6 @@
-import Anthropic from "@anthropic-ai/sdk";
+import Groq from "groq-sdk";
 
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+const client = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
 export async function POST(request) {
   try {
@@ -11,16 +11,19 @@ export async function POST(request) {
       if (!imageBase64) {
         return Response.json({ error: "No se recibió imagen" }, { status: 400 });
       }
-      const response = await client.messages.create({
-        model: "claude-3-5-haiku-20241022",
+
+      const response = await client.chat.completions.create({
+        model: "meta-llama/llama-4-scout-17b-16e-instruct",
         max_tokens: 300,
         messages: [
           {
             role: "user",
             content: [
               {
-                type: "image",
-                source: { type: "base64", media_type: mediaType || "image/jpeg", data: imageBase64 },
+                type: "image_url",
+                image_url: {
+                  url: `data:${mediaType || "image/jpeg"};base64,${imageBase64}`,
+                },
               },
               {
                 type: "text",
@@ -30,7 +33,8 @@ export async function POST(request) {
           },
         ],
       });
-      const ingredientes = response.content.map((b) => b.text || "").join("").trim();
+
+      const ingredientes = response.choices[0]?.message?.content?.trim() || "";
       return Response.json({ ingredientesDetectados: ingredientes });
     }
 
@@ -38,6 +42,7 @@ export async function POST(request) {
       if (!ingredientesEditados) {
         return Response.json({ error: "No se recibieron ingredientes" }, { status: 400 });
       }
+
       const preferencias = [];
       if (tipoComida) preferencias.push(`Tipo de comida: ${tipoComida}`);
       if (personas) preferencias.push(`Cantidad de personas: ${personas}`);
@@ -52,13 +57,13 @@ Generá exactamente 3 recetas usando EXCLUSIVAMENTE esos ingredientes. Solo pod�
 Respondé SOLO con este JSON, sin texto extra, sin markdown, sin emojis en los textos de ingredientes o pasos:
 {"recetas":[{"nombre":"nombre","emoji":"🍳","tiempo":"20 min","dificultad":"Fácil","porciones":"2","ingredientes":["item1","item2"],"pasos":["paso1","paso2"],"beneficios":["beneficio1","beneficio2"]}]}`;
 
-      const response = await client.messages.create({
-        model: "claude-3-5-haiku-20241022",
+      const response = await client.chat.completions.create({
+        model: "meta-llama/llama-4-scout-17b-16e-instruct",
         max_tokens: 1500,
         messages: [{ role: "user", content: prompt }],
       });
 
-      const text = response.content.map((b) => b.text || "").join("");
+      const text = response.choices[0]?.message?.content || "";
       const cleaned = text.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
       const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
       if (!jsonMatch) {
@@ -72,7 +77,7 @@ Respondé SOLO con este JSON, sin texto extra, sin markdown, sin emojis en los t
 
   } catch (error) {
     console.error("Error:", error);
-    const mensaje = error.message?.includes('overloaded')
+    const mensaje = error.message?.includes('overloaded') || error.message?.includes('rate_limit')
       ? "Estamos con mucha demanda en este momento, intentá de nuevo en unos segundos 🙏"
       : "Algo salió mal: " + error.message;
     return Response.json({ error: mensaje }, { status: 500 });
