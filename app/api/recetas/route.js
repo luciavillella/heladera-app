@@ -12,7 +12,7 @@ export async function POST(request) {
         return Response.json({ error: "No se recibió imagen" }, { status: 400 });
       }
       const response = await client.messages.create({
-        model: "claude-opus-4-5",
+        model: "claude-haiku-4-5",
         max_tokens: 300,
         messages: [
           {
