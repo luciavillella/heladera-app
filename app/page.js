@@ -467,7 +467,7 @@ export default function HeladeraApp() {
             className={`btn-fav ${savedIds[r.nombre] ? 'saved' : ''}`}
             onClick={() => toggleFavorito(r)}
           >
-            {savedIds[r.nombre] ? '❤️ Guardada' : '🤍 Guardar receta'}
+            {savedIds[r.nombre] ? (showFav && activeTab === 'favoritos' ? '🗑️ Eliminar' : '❤️ Guardada') : '🤍 Guardar receta'}
           </button>
         )}
       </div>
