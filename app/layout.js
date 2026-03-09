@@ -1,7 +1,6 @@
 import { ClerkProvider } from '@clerk/nextjs'
 import { esES } from '@clerk/localizations'
 import "./globals.css";
-
 export const metadata = {
   title: "Qué Cocino Today",
   description: "Sacá una foto a tu heladera y recibí 3 recetas personalizadas con IA",
@@ -12,14 +11,12 @@ export const metadata = {
     title: "Qué Cocino Today",
   },
 };
-
 export const viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
   themeColor: "#B85C2A",
 };
-
 export default function RootLayout({ children }) {
   return (
     <ClerkProvider
@@ -97,7 +94,16 @@ export default function RootLayout({ children }) {
           <meta name="apple-mobile-web-app-status-bar-style" content="default" />
           <meta name="apple-mobile-web-app-title" content="Qué Cocino Today" />
         </head>
-        <body>{children}</body>
+        <body>
+          {children}
+          <script dangerouslySetInnerHTML={{__html: `
+            if ('serviceWorker' in navigator) {
+              window.addEventListener('load', function() {
+                navigator.serviceWorker.register('/sw.js');
+              });
+            }
+          `}} />
+        </body>
       </html>
     </ClerkProvider>
   )
