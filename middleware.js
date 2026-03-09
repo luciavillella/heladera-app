@@ -14,6 +14,7 @@ const isPublicRoute = createRouteMatcher([
   '/icon-192-naranja.png',
   '/icon-512-naranja.png',
   '/logo.portal.png',
+  '/.well-known(.*)',
 ])
 
 export default clerkMiddleware(async (auth, request) => {
