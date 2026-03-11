@@ -8,47 +8,73 @@ export async function POST(request) {
         return Response.json({ error: "No se recibió imagen" }, { status: 400 });
       }
 
-      const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${process.env.GROQ_API_KEY}`,
-        },
-        body: JSON.stringify({
-          model: "meta-llama/llama-4-scout-17b-16e-instruct",
-          max_tokens: 400,
-          messages: [
-            {
-              role: "user",
-              content: [
-                {
-                  type: "image_url",
-                  image_url: {
-                    url: `data:${mediaType || "image/jpeg"};base64,${imageBase64}`,
+      // Verificar tamaño de imagen (máximo ~4MB en base64)
+      if (imageBase64.length > 5_500_000) {
+        return Response.json({ error: "La imagen es muy grande. Por favor usá una foto más pequeña." }, { status: 400 });
+      }
+
+      let groqResponse;
+      try {
+        groqResponse = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${process.env.GROQ_API_KEY}`,
+          },
+          body: JSON.stringify({
+            model: "meta-llama/llama-4-scout-17b-16e-instruct",
+            max_tokens: 400,
+            messages: [
+              {
+                role: "user",
+                content: [
+                  {
+                    type: "image_url",
+                    image_url: {
+                      url: `data:${mediaType || "image/jpeg"};base64,${imageBase64}`,
+                    },
                   },
-                },
-                {
-                  type: "text",
-                  text: `Sos un asistente de cocina. Mirá esta imagen y listá ÚNICAMENTE los alimentos y ingredientes comestibles que ves. 
+                  {
+                    type: "text",
+                    text: `Sos un asistente de cocina. Mirá esta imagen y listá ÚNICAMENTE los alimentos y ingredientes comestibles que ves. 
 
 IGNORÁ absolutamente todo lo que no sea comida: botellas, envases, recipientes, bolsas, cajas, tapas, etiquetas, bebidas en botella, utensilios, y cualquier objeto no comestible.
 
 INCLUÍ solo: verduras, frutas, carnes, lácteos, huevos, granos, legumbres, condimentos sin envase, y alimentos visibles sin empaque.
 
 Respondé ÚNICAMENTE con los nombres de los alimentos separados por comas, en español, sin cantidades ni descripciones. Ejemplo: "tomates, queso, huevos, cebolla, zanahoria, pechuga de pollo"`,
-                },
-              ],
-            },
-          ],
-        }),
-      });
+                  },
+                ],
+              },
+            ],
+          }),
+        });
+      } catch (fetchError) {
+        return Response.json({ error: "No se pudo conectar con el servicio. Intentá de nuevo." }, { status: 500 });
+      }
 
-      const data = await response.json();
-      if (!response.ok) {
-        return Response.json({ error: data.error?.message || "Error de Groq" }, { status: 500 });
+      let data;
+      try {
+        data = await groqResponse.json();
+      } catch {
+        return Response.json({ error: "Error al procesar la respuesta del servicio. Intentá de nuevo." }, { status: 500 });
+      }
+
+      if (!groqResponse.ok) {
+        const errorMsg = data?.error?.message || "";
+        if (errorMsg.toLowerCase().includes("rate limit") || groqResponse.status === 429) {
+          return Response.json({ error: "Estamos con mucha demanda en este momento, intentá de nuevo en unos segundos 🙏" }, { status: 429 });
+        }
+        if (groqResponse.status === 413 || errorMsg.toLowerCase().includes("too large")) {
+          return Response.json({ error: "La imagen es muy grande. Por favor usá una foto más pequeña." }, { status: 400 });
+        }
+        return Response.json({ error: "Error al analizar la imagen. Intentá de nuevo." }, { status: 500 });
       }
 
       const ingredientes = data.choices?.[0]?.message?.content?.trim() || "";
+      if (!ingredientes) {
+        return Response.json({ error: "No se pudieron detectar ingredientes. Intentá con otra foto." }, { status: 500 });
+      }
       return Response.json({ ingredientesDetectados: ingredientes });
     }
 
@@ -91,31 +117,53 @@ BENEFICIOS: 2 o 3 beneficios nutricionales concretos y simples de cada receta.
 Respondé SOLO con este JSON exacto, sin texto extra, sin markdown, sin emojis dentro de los textos de ingredientes o pasos:
 {"recetas":[{"nombre":"nombre creativo y apetitoso","emoji":"🍳","tiempo":"X min","dificultad":"Fácil/Media/Difícil","porciones":"X personas","ingredientes":["ingrediente con cantidad","ingrediente con cantidad"],"pasos":["Paso 1 detallado con técnica y tiempo. Consejo de chef incluido.","Paso 2 igual de detallado."],"beneficios":["beneficio concreto 1","beneficio concreto 2"]}]}`;
 
-      const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${process.env.GROQ_API_KEY}`,
-        },
-        body: JSON.stringify({
-          model: "meta-llama/llama-4-scout-17b-16e-instruct",
-          max_tokens: 3000,
-          messages: [{ role: "user", content: prompt }],
-        }),
-      });
+      let groqResponse;
+      try {
+        groqResponse = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${process.env.GROQ_API_KEY}`,
+          },
+          body: JSON.stringify({
+            model: "meta-llama/llama-4-scout-17b-16e-instruct",
+            max_tokens: 3000,
+            messages: [{ role: "user", content: prompt }],
+          }),
+        });
+      } catch (fetchError) {
+        return Response.json({ error: "No se pudo conectar con el servicio. Intentá de nuevo." }, { status: 500 });
+      }
 
-      const data = await response.json();
-      if (!response.ok) {
-        return Response.json({ error: data.error?.message || "Error de Groq" }, { status: 500 });
+      let data;
+      try {
+        data = await groqResponse.json();
+      } catch {
+        return Response.json({ error: "Error al procesar la respuesta del servicio. Intentá de nuevo." }, { status: 500 });
+      }
+
+      if (!groqResponse.ok) {
+        const errorMsg = data?.error?.message || "";
+        if (errorMsg.toLowerCase().includes("rate limit") || groqResponse.status === 429) {
+          return Response.json({ error: "Estamos con mucha demanda en este momento, intentá de nuevo en unos segundos 🙏" }, { status: 429 });
+        }
+        return Response.json({ error: "Error al generar recetas. Intentá de nuevo." }, { status: 500 });
       }
 
       const text = data.choices?.[0]?.message?.content || "";
       const cleaned = text.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
       const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
       if (!jsonMatch) {
-        return Response.json({ error: "No se pudo parsear la respuesta" }, { status: 500 });
+        return Response.json({ error: "No se pudo generar las recetas. Intentá de nuevo." }, { status: 500 });
       }
-      const parsed = JSON.parse(jsonMatch[0]);
+
+      let parsed;
+      try {
+        parsed = JSON.parse(jsonMatch[0]);
+      } catch {
+        return Response.json({ error: "No se pudo procesar las recetas. Intentá de nuevo." }, { status: 500 });
+      }
+
       return Response.json(parsed);
     }
 
@@ -123,9 +171,6 @@ Respondé SOLO con este JSON exacto, sin texto extra, sin markdown, sin emojis d
 
   } catch (error) {
     console.error("Error:", error);
-    const mensaje = error.message?.includes('rate_limit')
-      ? "Estamos con mucha demanda en este momento, intentá de nuevo en unos segundos 🙏"
-      : "Algo salió mal: " + error.message;
-    return Response.json({ error: mensaje }, { status: 500 });
+    return Response.json({ error: "Algo salió mal. Intentá de nuevo." }, { status: 500 });
   }
 }
