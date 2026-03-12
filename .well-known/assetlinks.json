@@ -1,8 +1,0 @@
-[{
-  "relation": ["delegate_permission/common.handle_all_urls"],
-  "target": {
-    "namespace": "android_app",
-    "package_name": "today.quecocino.cooking.twa",
-    "sha256_cert_fingerprints": ["83:E1:7E:5C:48:69:A1:37:77:C3:1D:11:D6:2A:28:E9:48:EA:2E:78:58:20:17:E7:2C:3B:8E:4F:F8:B9:89:D5"]
-  }
-}]
