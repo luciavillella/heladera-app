@@ -79,6 +79,8 @@ export default function RootLayout({ children }) {
           },
           rootBox: {
             width: '100%',
+            display: 'flex',
+            justifyContent: 'center',
           },
         },
       }}
@@ -91,6 +93,7 @@ export default function RootLayout({ children }) {
           <link rel="manifest" href="/manifest.json" />
           <link rel="apple-touch-icon" href="/icon-192-naranja.png" />
           <meta name="apple-mobile-web-app-capable" content="yes" />
+          <meta name="apple-mobile-web-app-status-bar-style" content="default" />
           <meta name="apple-mobile-web-app-title" content="Qué Cocino Today" />
         </head>
         <body>
