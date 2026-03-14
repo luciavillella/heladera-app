@@ -96,7 +96,7 @@ export default function RootLayout({ children }) {
           <meta name="apple-mobile-web-app-status-bar-style" content="default" />
           <meta name="apple-mobile-web-app-title" content="Qué Cocino Today" />
         </head>
-        <body style={{ margin: 0, padding: 0, minHeight: '100vh' }}>
+        <body>
           {children}
           <script dangerouslySetInnerHTML={{__html: `
             if ('serviceWorker' in navigator) {
