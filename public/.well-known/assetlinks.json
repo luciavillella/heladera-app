@@ -1,8 +1,8 @@
 [{
-  "relation": ["delegate_permission/common.handle_all_urls"],
-  "target": {
-    "namespace": "android_app",
-    "package_name": "today.quecocino.cooking.twa",
-    "sha256_cert_fingerprints": ["83:E1:7E:5C:48:69:A1:37:77:C3:1D:11:D6:2A:28:E9:48:EA:2E:78:58:20:17:E7:2C:3B:8E:4F:F8:B9:89:D5"]
-  }
-}]
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "too.today.quecocino.coocking.twa",
+        "sha256_cert_fingerprints": ["E1:AF:28:79:40:18:24:24:47:CE:93:98:AE:2A:AB:6B:D4:7E:CF:69:FE:94:E9:2F:CE:FC:94:B5:D1:81:39:89"]
+      }
+    }]
