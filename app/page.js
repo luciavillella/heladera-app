@@ -380,22 +380,44 @@ export default function HeladeraApp() {
   const toggleDieta = (item) =>
     setDieta((prev) => prev.includes(item) ? prev.filter((d) => d !== item) : [...prev, item]);
 
+  // ✅ FIX: comprime la imagen antes de enviar y protege el parse de JSON
   const detectarIngredientes = async () => {
     if (!imageFile || !puedeConsultar) return;
     setLoading(true); setLoadingMsg("Detectando ingredientes..."); setError(null);
     try {
       const base64 = await new Promise((res, rej) => {
-        const r = new FileReader();
-        r.onload = () => res(r.result.split(",")[1]);
-        r.onerror = () => rej(new Error("Error leyendo archivo"));
-        r.readAsDataURL(imageFile);
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement("canvas");
+          const MAX = 1200;
+          let w = img.width, h = img.height;
+          if (w > MAX || h > MAX) {
+            if (w > h) { h = Math.round(h * MAX / w); w = MAX; }
+            else { w = Math.round(w * MAX / h); h = MAX; }
+          }
+          canvas.width = w; canvas.height = h;
+          canvas.getContext("2d").drawImage(img, 0, 0, w, h);
+          const compressed = canvas.toDataURL("image/jpeg", 0.82);
+          res(compressed.split(",")[1]);
+        };
+        img.onerror = () => rej(new Error("Error procesando imagen"));
+        img.src = URL.createObjectURL(imageFile);
       });
+
       const resp = await fetch("/api/recetas", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ modo: "detectar", imageBase64: base64, mediaType: imageFile.type }),
+        body: JSON.stringify({ modo: "detectar", imageBase64: base64, mediaType: "image/jpeg" }),
       });
-      const data = await resp.json();
+
+      const text = await resp.text();
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch {
+        throw new Error("Error del servidor. Intentá con una foto más pequeña.");
+      }
+
       if (!resp.ok) throw new Error(data.error || "Error del servidor");
       setIngredientesDetectados(data.ingredientesDetectados);
       setIngredientesEditados(data.ingredientesDetectados);
