@@ -106,6 +106,10 @@ NOMBRES: Creativos, apetitosos y evocadores. Nada genérico. En vez de "Arroz co
 
 VARIEDAD: Las 3 recetas deben ser técnicamente distintas entre sí (una salteada, una horneada, una cruda o fría, por ejemplo). Explorá distintas texturas y temperaturas.
 
+COHERENCIA DE SABOR: Respetá estrictamente el perfil de sabor de cada preparación. Las tortas, budines y bizcochuelos son SIEMPRE dulces — nunca los uses con ingredientes salados. Para ingredientes salados usá: guisos, salteados, tartas saladas, milanesas, revueltos, sopas, ensaladas, wraps, arroz, pastas u otras preparaciones saladas según corresponda. Si el tipo de comida es Postre, sí podés sugerir preparaciones dulces. En cualquier otro caso (Almuerzo, Cena, Desayuno, Merienda, Colación) las recetas deben ser saladas o neutras, nunca dulces.
+
+SALUDABLE: Las recetas deben ser equilibradas y sin excesos que puedan dañar la salud. Evitá frituras innecesarias, exceso de grasas saturadas, azúcares agregados o harinas refinadas salvo que los ingredientes disponibles no den otra opción. Priorizá técnicas de cocción que preserven los nutrientes: horno, vapor, salteado con poco aceite, crudo. Las porciones deben ser razonables y equilibradas.
+
 CREATIVIDAD: Buscá combinaciones de sabores que sorprendan pero que funcionen. Inspirate en recetas latinoamericanas tradicionales o de autor. Podés hacer versiones originales de clásicos.
 
 PASOS: Cada paso debe ser detallado y útil para alguien cocinando en casa. Incluí: técnica exacta, tiempo de cocción, temperatura si aplica, punto de cocción (dorado, al dente, cremoso), y algún consejo de chef. Cada paso debe tener al menos 2 oraciones. Ajustá la cantidad de pasos al tiempo disponible: si el tiempo es corto, menos pasos y técnicas rápidas; si hay más tiempo, podés desarrollar más.
